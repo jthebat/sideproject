@@ -14,6 +14,11 @@ const MYSQL = {
     pass: MYSQL_PASS
 };
 
+const SOCIAL = {
+    kakao_id: process.env.KAKAO_ID,
+    kakao_url: process.env.KAKAO_URL
+};
+
 const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || 'localhost';
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 
@@ -24,7 +29,8 @@ const SERVER = {
 
 const config = {
     mysql: MYSQL,
-    server: SERVER
+    server: SERVER,
+    social: SOCIAL
 };
 
 export default config;
