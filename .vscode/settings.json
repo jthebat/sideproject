@@ -3,8 +3,5 @@
     "editor.bracketPairColorization.enabled": true,
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
-    "editor.wordWrap": "on",
-    "[typescript]": {
-      "editor.defaultFormatter": "vscode.typescript-language-features"
-    }
-  }
+    "editor.wordWrap": "on"
+}
