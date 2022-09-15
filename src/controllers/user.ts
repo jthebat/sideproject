@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
+// import { Connect, Query } from '../config/mysql';
 import logging from '../config/logging';
-import { Connect, Query } from '../config/mysql';
 import passport from 'passport';
 
-const NAMESPACE = 'Users';
+import config from '../config/config';
 
+const NAMESPACE = 'Users';
+/*
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Inserting users');
 
@@ -82,16 +84,19 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
             });
         });
 };
-
+*/
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate('kakao', { failureRedirect: '/' }, (err, user) => {
-        if (err) return next(err);
+    passport.authenticate(
+        'kakao',
+        { failureRedirect: '/' },
+        (err, user, info) => {
+            if (err) return next(err);
 
-        // const token = jwt.sign({ user: user._id }, config.jwt.secretKey as jwt.Secret, { expiresIn: "1d" });
+        res.status(200).json({
+            status: 'success'});
 
-        res.redirect('http://www.naver.com');
     })(req, res, next);
 };
 
-export default { createUser, getAllUsers, kakaoCallback };
+export default {  kakaoCallback };

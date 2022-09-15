@@ -1,39 +1,46 @@
 import KakaoRouter from 'passport';
-const KakaoStrategy = require('passport-kakao').Strategy;
+import connectDB from '../config/mysql';
 import config from '../config/config';
+
+const KakaoStrategy = require('passport-kakao').Strategy;
 
 const kakaoPassport = () => {
     KakaoRouter.use(
         new KakaoStrategy(
             {
-                clientID: config.social.kakao_id, // 카카오 로그인에서 발급받은 REST API 키
-                callbackURL: config.social.kakao_url // 카카오 로그인 Redirect URI 경로
+                clientID: config.social.kakao_id,
+                callbackURL: config.social.kakao_url
             },
             async (accessToken: any, refreshToken: any, profile: any, done: any) => {
                 try {
                     let snsId: string = profile.id;
                     let email: string = profile._json.kakao_account.email;
                     let provider: string = profile.provider;
-                    /*
-                    // 카카오 플랫폼에서 로그인 했고 이메일이 일치하는경우
-                    const existUser = await User.findOne({ $and: [{ email: email }, { provider: provider }] });
+                    let nickname: string = profile.username;
 
-                    // 이미 가입된 카카오 프로필이면 성공
-                    if (existUser) {
-                        done(null, existUser); // 로그인 인증 완료
-                    } else {
-                        const newUser = await User.create({
-                            email,
-                            nickname: profile.username,
-                            provider
-                        });
+                    // sql
+                    const existUser = `SELECT snsId FROM users WHERE snsId = ? AND provider =?`
 
-                        done(null, newUser); // 회원가입하고 로그인 인증 완료
-                        return;
+                    const newUser = `INSERT INTO users (snsId, email, nickname, provider) VALUES ("${snsId}", "${email}", "${nickname}", "${provider}", "${refreshToken}")`
+
+                    // user check
+                    connectDB.query(existUser, [snsId, provider], function (error, result) {
+                        if (error) return console.log(error);
+                        if (result.length === 0) {
+                            // 해당되는 user가 없으면 DB에 넣기
+                            connectDB.query(newUser, function (error, result) {
+                                if (error) return console.log(error);
+                                else {
+                                    return done(null, console.log('success INSERT!'));
+                                }
+                            })
+                        } else {
+                            const userSnsId = JSON.stringify(result[0]);
+                            return done(null, userSnsId);
+                        }
                     }
-                    */
-                    done();
-                    return;
+
+                    );
                 } catch (error) {
                     console.log(error);
                     done(error);
