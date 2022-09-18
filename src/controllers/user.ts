@@ -143,4 +143,21 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
     })(req, res, next);
 };
 
+//로그인한 유저에 대한 정보 가져오기
+
+const userInfo = async (req: Request, res: Response) => {
+    const { user } = res.locals;
+    // console.log(user.test);
+
+    if (!user) {
+        return res.status(400).json({ result: false, message: '존재하지 않음' });
+    }
+    // console.log('Test', user.info[snsId]);
+    return res.json({
+        message: 'success',
+        snsId: user.info.snsId,
+        nickname: user.info.nickname
+    });
+};
+
 export default { kakaoCallback, userInfo };
