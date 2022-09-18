@@ -19,6 +19,10 @@ const SOCIAL = {
     kakao_url: process.env.KAKAO_URL
 };
 
+const JWT = {
+    secretKey: process.env.JWT_SECRET
+};
+
 const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || 'localhost';
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 
@@ -30,7 +34,8 @@ const SERVER = {
 const config = {
     mysql: MYSQL,
     server: SERVER,
-    social: SOCIAL
+    social: SOCIAL,
+    jwt: JWT
 };
 
 export default config;
