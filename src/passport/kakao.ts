@@ -26,23 +26,7 @@ const kakaoPassport = () => {
                     // user check
                     connectDB.query(existUser, [snsId, provider], function (error, rows) {
                         if (error) return console.log(error);
-                        /**이미 있는 회원 여부 controller쪽에서 해결 refresh토큰 만들어서 db에 반영하려고 */
-                        /*
-                        if (result.length === 0) {
-                            // 해당되는 user가 없으면 DB에 넣기
-                            connectDB.query(newUser, function (error, result) {
-                                if (error) return console.log(error);
-                                else {
-                                    return done(null, console.log('success INSERT!'));
-                                }
-                            })
-                        } else {
-                            const userSnsId = JSON.stringify(result[0]);
-                            return done(null, userSnsId);
-                        }
-                        */
 
-                        // return done(null, rows, InsertQuery);
                         return done(null, rows, info);
                         /**done function looks like...*/
                         /*
