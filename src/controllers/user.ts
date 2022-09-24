@@ -160,4 +160,55 @@ const userInfo = async (req: Request, res: Response) => {
     });
 };
 
-export default { kakaoCallback, userInfo };
+// 회원가입 후 닉네임, 캐릭터 설정
+const signup = async (req: Request, res: Response) => {
+    const { user } = res.locals;
+    const { nickname, charImg } = req.body;
+    const exp = 0;
+
+    const query_1 = `update users set nickname =? where snsId = ?`;
+    const query_2 = `INSERT INTO userCharacters (charImg, exp) VALUE (?,?) where snsId = ?`;
+
+    if (user) {
+        connectDB.query(query_1, [nickname, user.snsId], function (err, result) {
+            if (err) return console.log(err);
+            else {
+                res.status(200).send({
+                    message: 'success'
+                })
+            };
+        });
+
+        connectDB.query(query_2, [charImg, exp, user.snsId], function (err, result) {
+            if (err) return console.log(err);
+            else {
+                res.status(200).send({
+                    message: 'success'
+                });
+            };
+        });
+    }
+};
+
+// 닉네임 중복체크
+const nicknameCheck = async (req: Request, res: Response) => {
+    const { nickname } = req.body;
+    const query = `SELECT nickname FROM users WHERE nickname =?`
+
+    connectDB.query(query, [nickname], (err, result) => {
+        if (err) return console.log(err);
+        else {
+            if (result[0]) {
+                res.status(400).send({
+                    message: '이미 있는 닉네임입니다.'
+                });
+            } else {
+                res.status(200).send({
+                    message: '사용가능한 닉네임입니다.'
+                });
+            };
+        };
+    })
+};
+
+export default { kakaoCallback, userInfo, signup, nicknameCheck };
