@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import logging from './config/logging';
 import config from './config/config';
 import helmet from 'helmet';
-import { userRouter } from './routes/user';
+import router from './routes'
 import { kakaoPassport } from './passport/kakao';
 
 const NAMESPACE = 'Server';
@@ -44,7 +44,7 @@ kakaoPassport();
 
 /** Routes go here */
 app.use(helmet());
-app.use('/api/user', [userRouter]);
+app.use('/api', router);
 app.get('/', (req, res) => {
     res.send('This is a test page');
 });
