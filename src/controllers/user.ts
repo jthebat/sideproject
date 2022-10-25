@@ -36,11 +36,12 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         });
         /**queries */
         const updateQuery = `update users set refreshtoken = ? where snsId = ?`;
-        const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+        const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken, Ad_check) VALUE (?,?,?,?,?)`;
+        const { Ad_check } = req.query;
 
         if (user.length === 0) {
             // 해당되는 user가 없으면 DB에 넣기
-            connectDB.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken], function (error, result) {
+            connectDB.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken, Ad_check], function (error, result) {
                 if (error) return console.log(error);
                 else {
                     /**front와 연결후 redirect 주소로 연결 필요  */
