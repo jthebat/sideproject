@@ -19,7 +19,7 @@ const kakaoPassport = () => {
                     let nickname: string = profile.username;
 
                     // sql
-                    const existUser = `SELECT snsId FROM users WHERE snsId = ? AND provider =?`;
+                    const existUser = `SELECT snsId FROM users WHERE snsId=? AND provider =?`;
 
                     const info: object = { snsId, email, nickname, provider };
 
