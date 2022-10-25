@@ -37,10 +37,10 @@ export default {
     getRoom: async (req: Request, res: Response) => {
         const { studyType, hashTag, studyState } = req.query;
 
-        const query_in_hashTag = `SELECT title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo as RI JOIN room ON RI.roomId = room.roomId WHERE studyType=? AND hashTag REGEXP ?`;
-        const query_no_hashTag = `SELECT title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo as RI JOIN room ON RI.roomId = room.roomId WHERE studyType=?`;
-        const query_in_State_nohashTag = `SELECT title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo as RI JOIN room ON RI.roomId = room.roomId WHERE studyType =? AND studyState=?`;
-        const query_in_State_hashTag = `SELECT title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo as RI JOIN room ON RI.roomId = room.roomId WHERE studyType =? AND studyState=? AND hashTag REGEXP ?`;
+        const query_in_hashTag = `SELECT room.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo JOIN room ON roomInfo.roomId = room.roomId WHERE studyType=? AND hashTag REGEXP ?`;
+        const query_no_hashTag = `SELECT room.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo JOIN room ON roomInfo.roomId = room.roomId WHERE studyType=?`;
+        const query_in_State_nohashTag = `SELECT room.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo JOIN room ON roomInfo.roomId = room.roomId WHERE studyType =? AND studyState=?`;
+        const query_in_State_hashTag = `SELECT room.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM roomInfo JOIN room ON roomInfo.roomId = room.roomId WHERE studyType =? AND studyState=? AND hashTag REGEXP ?`;
 
         // studyState = public
         if (studyState) {
