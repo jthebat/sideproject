@@ -5,9 +5,19 @@ import config from './config/config';
 import helmet from 'helmet';
 import router from './routes'
 import { kakaoPassport } from './passport/kakao';
+import socketConnect from './socket';
+import cors from 'cors';
 
 const NAMESPACE = 'Server';
 const app = express();
+socketConnect();
+
+const corsOption = {
+    origin: ['http://loaclhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+};
+
+app.use(cors(corsOption));
 
 /** Log the request */
 app.use((req, res, next) => {
@@ -64,3 +74,5 @@ app.use((err: Error, req: Request, res: Response) => {
 });
 
 app.listen(config.server.port, (): void => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
+
+
