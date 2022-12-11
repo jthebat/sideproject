@@ -45,7 +45,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 if (error) return console.log(error);
                 else {
                     /**front와 연결후 redirect 주소로 연결 필요  */
-                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success" }).redirect(`http://www.naver.com`);
+                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success" });
                     //res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://www.naver.com`);
                 }
             });
@@ -54,7 +54,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 if (error) return console.log(error);
                 else {
                     /**front와 연결후 redirect 주소로 연결 필요 */
-                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken }).redirect(`http://www.naver.com`);
+                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken });
                     //res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://www.naver.com`);
                 }
             });
