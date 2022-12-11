@@ -10,6 +10,9 @@ userRouter.get('/kakao', passport.authenticate('kakao'));
 // kakao login callback
 userRouter.get('/kakao/callback', userController.kakaoCallback);
 
+// Update AD Check
+userRouter.put('/ad-check', authMiddleware, userController.ADCheck);
+
 // Searching for userinfo
 userRouter.get('/me', authMiddleware, userController.userInfo);
 

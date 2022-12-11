@@ -10,14 +10,11 @@ import cors from 'cors';
 
 const NAMESPACE = 'Server';
 const app = express();
-socketConnect();
 
 const corsOption = {
-    origin: ['http://loaclhost:3000', 'http://127.0.0.1:3000'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
 };
-
-app.use(cors(corsOption));
 
 /** Log the request */
 app.use((req, res, next) => {
@@ -49,11 +46,13 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(helmet());
+app.use(cors(corsOption));
+
 /** passport for social login */
 kakaoPassport();
 
 /** Routes go here */
-app.use(helmet());
 app.use('/api', router);
 app.get('/', (req, res) => {
     res.send('This is a test page');
@@ -74,5 +73,7 @@ app.use((err: Error, req: Request, res: Response) => {
 });
 
 app.listen(config.server.port, (): void => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
+
+socketConnect();
 
 
