@@ -12,9 +12,9 @@ const NAMESPACE = "Server";
 const app = express();
 socketConnect();
 
-// const allowedOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const allowedOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const options: cors.CorsOptions = {
-    origin: "*",
+    origin: allowedOrigins,
     credentials: true // 사용자 인증이 필요한 리소스(쿠키 ..등) 접근
 };
 app.use(cors(options));
@@ -37,10 +37,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 /** Rules of our API */
-/*
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
 
     if (req.method == "OPTIONS") {
         res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
@@ -49,7 +48,7 @@ app.use((req, res, next) => {
 
     next();
 });
-*/
+
 /** passport for social login */
 kakaoPassport();
 
@@ -62,7 +61,7 @@ app.get("/", (req, res) => {
 
 /** Error handling */
 app.use((req, res) => {
-    const error = new Error("Not found!!!");
+    const error = new Error("Not found");
 
     res.status(404).json({
         message: error.message
