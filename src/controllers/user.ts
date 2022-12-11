@@ -36,12 +36,12 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         });
         /**queries */
         const updateQuery = `update users set refreshtoken = ? where snsId = ?`;
-        const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken, Ad_check) VALUE (?,?,?,?,?)`;
-        const { Ad_check } = req.query;
+        const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+
 
         if (user.length === 0) {
             // 해당되는 user가 없으면 DB에 넣기
-            connectDB.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken, Ad_check], function (error, result) {
+            connectDB.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken], function (error, result) {
                 if (error) return console.log(error);
                 else {
                     /**front와 연결후 redirect 주소로 연결 필요  */
@@ -60,6 +60,19 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
             });
         }
     })(req, res, next);
+};
+
+// 광고 수신 동의 확인
+const ADCheck = async (req: Request, res: Response) => {
+    const { Ad_check } = req.body;
+    const { snsId } = res.locals.user.info;
+
+    const insert_Ad = `UPDATE users SET AD_Check =? WHERE snsId =?`
+
+    connectDB.query(insert_Ad, [Ad_check, snsId], function (err, result) {
+        if (err) return console.log(err);
+        return res.status(200).send({ message: 'success' });
+    });
 };
 
 // 로그인한 유저에 대한 정보 가져오기
@@ -159,4 +172,4 @@ const signOut = async (req: Request, res: Response) => {
     });
 };
 
-export default { kakaoCallback, userInfo, signup, character, nicknameCheck, signOut };
+export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck, signOut };
