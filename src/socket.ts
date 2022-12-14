@@ -44,7 +44,7 @@ function NewMessages(snsId: number, roomId: number, message: string) {
 };
 
 function ExistMsg(roomId: number) {
-    const FindMsg = `SELECT * FROM chatMsg WHERE roomId =?`
+    const FindMsg = `SELECT nickname, message, sendTime FROM chatMsg as CM JOIN users as U ON U.snsId = CM.snsId WHERE roomId = ?`
 
     connectDB.query(FindMsg, [roomId], function (err, result) {
         if (err) return console.log(err);
@@ -65,7 +65,7 @@ const socketConnect = () => {
             ExistNickname(nickname, roomId, snsId);
             socket.to(roomId).emit('welcome', nickname);
             // 처음엔 나오지 않고 입장 후 다른 누군가 입장했을때 그 방에 있는 모두에게 발동
-            ExistMsg(roomId); // 모든 메세지 보내기
+            ExistMsg(roomId); // 해당 방의 모든 메세지 보내기
         });
 
         // 방 퇴장
