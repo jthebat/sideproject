@@ -93,21 +93,25 @@ const signup = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
     const { nickname } = req.body;
 
-    const query_1 = `SELECT nickname FROM users WHERE nickname=?`;
+    const query_1 = `SELECT snsId FROM users WHERE snsId=?`;
     const query_2 = `UPDATE users SET nickname=? WHERE snsId=?`;
 
-    connectDB.query(query_1, [nickname], function (err, result) {
+    connectDB.query(query_1, [snsId], function (err, result) {
         if (err) return console.log(err);
-        else {
+        if (snsId == result[0].snsId) {
             connectDB.query(query_2, [nickname, snsId], function (err, result) {
                 if (err) return console.log(err);
                 else {
                     res.status(200).send({
                         message: "success"
                     });
-                }
+                };
             });
-        }
+        } else {
+            res.status(400).send({
+                errorMessage: '일치하는 user가 없습니다.'
+            });
+        };
     });
 };
 
@@ -129,7 +133,7 @@ const character = async (req: Request, res: Response) => {
 
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
-    const { nickname } = req.body;
+    const { nickname } = req.params;
     const query = `SELECT nickname FROM users WHERE nickname=?`;
 
     if (nickname) {
