@@ -6,10 +6,12 @@ import helmet from 'helmet';
 import router from './routes'
 import { kakaoPassport } from './passport/kakao';
 import socketConnect from './socket';
+import http from 'http';
 import cors from 'cors';
 
 const NAMESPACE = 'Server';
 const app = express();
+const socketServer = http.createServer(app);
 
 const corsOption = {
     origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -72,8 +74,10 @@ app.use((err: Error, req: Request, res: Response) => {
     res.status(500).send('Server Error');
 });
 
+socketConnect(socketServer);
+
 app.listen(config.server.port, (): void => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
 
-socketConnect();
+
 
 
