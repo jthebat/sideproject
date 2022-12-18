@@ -54,9 +54,9 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 else {
                     /**front와 연결후 redirect 주소로 연결 필요 */
                     res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken });
-                }
+                };
             });
-        }
+        };
     })(req, res, next);
 };
 
@@ -148,14 +148,14 @@ const nicknameCheck = async (req: Request, res: Response) => {
                     res.status(200).send({
                         message: "사용가능한 닉네임입니다."
                     });
-                }
-            }
+                };
+            };
         });
     } else {
         res.status(400).send({
             message: "닉네임을 입력하세요."
         });
-    }
+    };
 };
 
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
@@ -170,7 +170,7 @@ const signOut = async (req: Request, res: Response) => {
             res.status(200).send({
                 message: "success"
             });
-        }
+        };
     });
 };
 
