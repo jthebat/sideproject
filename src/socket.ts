@@ -26,15 +26,19 @@ const socket = (server: http.Server) => {
     io.on('connection', (socket) => {
         console.log('socket connect!')
         io.emit('firstEvent', '소켓 연결 성공!');
-        /*
 
+        /*
         // 방 입장 & 그동안의 채팅 보이기?
         socket.on('enter_room', (nickname, roomId, snsId) => {
-            socket.join(roomId); // roomId 맞는 room 생성/입장
-            ExistNickname(nickname, roomId, snsId);
-            socket.to(roomId).emit('welcome', nickname);
-            // 처음엔 나오지 않고 입장 후 다른 누군가 입장했을때 그 방에 있는 모두에게 발동
-            ExistMsg(roomId); // 해당 방의 모든 메세지 보내기
+            try {
+                socket.join(roomId); // roomId 맞는 room 생성/입장
+                InsertNickname(roomId, snsId);
+                socket.to(roomId).emit('welcome', nickname);
+                // 처음엔 나오지 않고 입장 후 다른 누군가 입장했을때 그 방에 있는 모두에게 발동
+                ExistMsg(roomId); // 해당 방의 모든 메세지 보내기
+            } catch (err) {
+                return console.log(err);
+            };
         });
 
         // 방 퇴장
@@ -49,7 +53,7 @@ const socket = (server: http.Server) => {
 
             done();
         });
-        */
+        * /
 
 
         //webRTC part
@@ -129,40 +133,41 @@ const socket = (server: http.Server) => {
 };
 
 
-function ExistNickname(nickname: string, roomId: number, snsId: number) {
-    const findNickname = `SELECT chatRoomId, roomId, nickname FROM chatRoom as CR JOIN users as u ON u.snsId = CR.snsId WHERE nickname = ?;`
+function InsertNickname(roomId: number, snsId: number) {
     const insertUser = `INSERT INTO chatRoom (roomId, snsId) VALUE(?,?)`
-
-    connectDB.query(findNickname, [nickname], function (err, result) {
-        if (err) return console.log(err);
-        else {
-            connectDB.query(insertUser, [roomId, snsId], function (err, reuslt) {
-                if (err) return console.log(err);
-                else {
-                    return nickname;
-                };
-            });
-        };
-    });
+    try {
+        connectDB.query(insertUser, [roomId, snsId], function (err) {
+            if (err) return console.log(err);
+        });
+    } catch (err) {
+        return console.log(err);
+    };
 };
 
 function NewMessages(snsId: number, roomId: number, message: string, sendTime: Date) {
     const insertMsg = `INSERT INTO chatMsg (snsId, roomId, message, sendTime) VALUE(?,?,?,?)`
-
-    connectDB.query(insertMsg, [snsId, roomId, message, sendTime], function (err, result) {
-        if (err) return console.log(err);
-    });
+    try {
+        connectDB.query(insertMsg, [snsId, roomId, message, sendTime], function (err) {
+            if (err) return console.log(err);
+        });
+    } catch (err) {
+        return console.log(err);
+    };
 };
 
 function ExistMsg(roomId: number) {
     const FindMsg = `SELECT nickname, message, sendTime FROM chatMsg as CM JOIN users as U ON U.snsId = CM.snsId WHERE roomId = ?`
 
-    connectDB.query(FindMsg, [roomId], function (err, result) {
-        if (err) return console.log(err);
-        else {
-            return result;
-        }
-    })
+    try {
+        connectDB.query(FindMsg, [roomId], function (err, result) {
+            if (err) return console.log(err);
+            else {
+                return result;
+            };
+        });
+    } catch (err) {
+        return console.log(err);
+    };
 };
 
 export default socket;
