@@ -24,8 +24,9 @@ const socket = (server: http.Server) => {
     */
 
     io.on('connection', (socket) => {
-
-        socket.emit('firstEvent', '소켓 연결 성공!');
+        console.log('socket connect!')
+        io.emit('firstEvent', '소켓 연결 성공!');
+        /*
 
         // 방 입장 & 그동안의 채팅 보이기?
         socket.on('enter_room', (nickname, roomId, snsId) => {
@@ -48,6 +49,7 @@ const socket = (server: http.Server) => {
 
             done();
         });
+        */
 
 
         //webRTC part
