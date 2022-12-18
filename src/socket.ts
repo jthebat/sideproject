@@ -24,8 +24,8 @@ const socket = (server: http.Server) => {
     */
 
     io.on('connection', (socket) => {
-        console.log('소켓연결 성공!');
-        io.emit('firstEvent', '소켓 연결 성공!');
+
+        socket.emit('firstEvent', '소켓 연결 성공!');
 
         // 방 입장 & 그동안의 채팅 보이기?
         socket.on('enter_room', (nickname, roomId, snsId) => {
@@ -42,8 +42,8 @@ const socket = (server: http.Server) => {
         });
 
         // 메세지 보내기
-        socket.on('new_message', (nickname, snsId, msg, roomId, done) => {
-            NewMessages(snsId, roomId, msg);
+        socket.on('new_message', (nickname, snsId, msg, roomId, sendTime, done) => {
+            NewMessages(snsId, roomId, msg, sendTime);
             socket.to(roomId).emit('new_message', `${nickname}: ${msg}`);
 
             done();
@@ -144,13 +144,11 @@ function ExistNickname(nickname: string, roomId: number, snsId: number) {
     });
 };
 
-function NewMessages(snsId: number, roomId: number, message: string) {
+function NewMessages(snsId: number, roomId: number, message: string, sendTime: Date) {
     const insertMsg = `INSERT INTO chatMsg (snsId, roomId, message, sendTime) VALUE(?,?,?,?)`
-    const sendTime = new Date();
 
     connectDB.query(insertMsg, [snsId, roomId, message, sendTime], function (err, result) {
         if (err) return console.log(err);
-        return;
     });
 };
 
