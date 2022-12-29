@@ -1,11 +1,12 @@
-import mysql from "mysql";
+import mysql from "mysql2/promise";
 import config from "./config";
 
-const connectDB = mysql.createConnection({
+const pool = mysql.createPool({
     user: config.mysql.user,
     password: config.mysql.pass,
     host: config.mysql.host,
-    database: config.mysql.database
+    database: config.mysql.database,
+    connectionLimit: 15
 });
 
-export default connectDB;
+export default pool;

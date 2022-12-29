@@ -26,6 +26,6 @@ userRouter.post('/character', authMiddleware, userController.character);
 userRouter.get('/checknickname', userController.nicknameCheck);
 
 // 탈퇴
-userRouter.delete('/signout', authMiddleware, userController.signOut);
+// userRouter.delete('/signout', authMiddleware, userController.signOut);
 
 export { userRouter };
