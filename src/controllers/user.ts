@@ -1,12 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import passport from "passport";
-import connectDB from "../config/mysql";
+import pool from "../config/mysql";
 import jwt from "jsonwebtoken";
 import config from "../config/config";
+import { FieldPacket, RowDataPacket } from "mysql2/promise";
+
+interface access extends RowDataPacket {
+    nickname: string;
+}
 
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("kakao", { failureRedirect: "/" }, (err, user, info) => {
+    passport.authenticate("kakao", { failureRedirect: "/" }, async (err, user, info) => {
         if (err) return next(err);
         /**refreshtoken 생성 */
         const refreshToken = jwt.sign({}, config.jwt.secretKey as jwt.Secret, {
@@ -37,26 +42,23 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         /**queries */
         const updateQuery = `update users set refreshtoken = ? where snsId = ?`;
         const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+        const conn = await pool.getConnection();
 
-
-        if (user.length === 0) {
-            // 해당되는 user가 없으면 DB에 넣기
-            connectDB.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken], function (error, result) {
-                if (error) return console.log(error);
-                else {
-                    /**front와 연결후 redirect 주소로 연결 필요  */
-                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success" });
-                }
-            });
-        } else {
-            connectDB.query(updateQuery, [refreshToken, info.snsId], function (error, result) {
-                if (error) return console.log(error);
-                else {
-                    /**front와 연결후 redirect 주소로 연결 필요 */
-                    res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken });
-                };
-            });
-        };
+        try {
+            if (user.length === 0) {
+                await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
+                /**front와 연결후 redirect 주소로 연결 필요 */
+                res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success" });
+            } else {
+                await conn.query(updateQuery, [refreshToken, info.snsId]);
+                /**front와 연결후 redirect 주소로 연결 필요 */
+                res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken });
+            }
+        } catch (err) {
+            console.log(err);
+        } finally {
+            conn.release();
+        }
     })(req, res, next);
 };
 
@@ -65,12 +67,18 @@ const ADCheck = async (req: Request, res: Response) => {
     const { Ad_check } = req.body;
     const { snsId } = res.locals.user.info;
 
-    const insert_Ad = `UPDATE users SET AD_Check =? WHERE snsId =?`
+    const insert_Ad = `UPDATE users SET AD_Check =? WHERE snsId =?`;
 
-    connectDB.query(insert_Ad, [Ad_check, snsId], function (err, result) {
-        if (err) return console.log(err);
-        return res.status(200).send({ message: 'success' });
-    });
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.query(insert_Ad, [Ad_check, snsId]);
+        res.status(200).send({ message: "success" });
+    } catch (err) {
+        console.log(err);
+    } finally {
+        conn.release();
+    }
 };
 
 // 로그인한 유저에 대한 정보 가져오기
@@ -93,26 +101,19 @@ const signup = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
     const { nickname } = req.body;
 
-    const query_1 = `SELECT snsId FROM users WHERE snsId=?`;
+    // const query_1 = `SELECT snsId FROM users WHERE snsId=?`;
     const query_2 = `UPDATE users SET nickname=? WHERE snsId=?`;
 
-    connectDB.query(query_1, [snsId], function (err, result) {
-        if (err) return console.log(err);
-        if (snsId == result[0].snsId) {
-            connectDB.query(query_2, [nickname, snsId], function (err, result) {
-                if (err) return console.log(err);
-                else {
-                    res.status(200).send({
-                        message: "success"
-                    });
-                };
-            });
-        } else {
-            res.status(400).send({
-                errorMessage: '일치하는 user가 없습니다.'
-            });
-        };
-    });
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.query(query_2, [nickname, snsId]);
+        res.status(200).send({ message: "success" });
+    } catch (err) {
+        console.log(err);
+    } finally {
+        conn.release();
+    }
 };
 
 // 캐릭터 저장
@@ -121,14 +122,16 @@ const character = async (req: Request, res: Response) => {
     const { charImg } = req.body;
     const query = `INSERT INTO userCharacters (charImg, snsId) VALUE(?,?)`;
 
-    connectDB.query(query, [charImg, snsId], function (err, result) {
-        if (err) return console.log(err);
-        else {
-            res.status(200).send({
-                message: "success"
-            });
-        }
-    });
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.query(query, [charImg, snsId]);
+        res.status(200).send({ message: "success" });
+    } catch (err) {
+        console.log(err);
+    } finally {
+        conn.release();
+    }
 };
 
 // 닉네임 중복체크
@@ -136,28 +139,27 @@ const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.params;
     const query = `SELECT nickname FROM users WHERE nickname=?`;
 
-    if (nickname) {
-        connectDB.query(query, [nickname], (err, result) => {
-            if (err) return console.log(err);
-            else {
-                if (result[0]) {
-                    res.status(400).send({
-                        message: "이미 있는 닉네임입니다."
-                    });
-                } else {
-                    res.status(200).send({
-                        message: "사용가능한 닉네임입니다."
-                    });
-                };
-            };
-        });
-    } else {
-        res.status(400).send({
-            message: "닉네임을 입력하세요."
-        });
-    };
+    const conn = await pool.getConnection();
+
+    try {
+        const [rows]: [access[], FieldPacket[]] = await conn.query(query, [nickname]);
+        if (rows[0]) {
+            res.status(400).send({
+                message: "이미 있는 닉네임입니다."
+            });
+        } else {
+            res.status(200).send({
+                message: "사용가능한 닉네임입니다."
+            });
+        }
+    } catch (err) {
+        console.log(err);
+    } finally {
+        conn.release();
+    }
 };
 
+/*
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
 const signOut = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
@@ -170,8 +172,8 @@ const signOut = async (req: Request, res: Response) => {
             res.status(200).send({
                 message: "success"
             });
-        };
+        }
     });
 };
-
-export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck, signOut };
+*/
+export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck };

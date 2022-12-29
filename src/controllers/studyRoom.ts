@@ -1,39 +1,60 @@
 import { Request, Response } from "express";
-import connectDB from "../config/mysql";
+import pool from "../config/mysql";
+import { FieldPacket, RowDataPacket } from "mysql2";
+
+interface access extends RowDataPacket {
+    roomId: number;
+    createdAt: Date;
+}
 
 export default {
     // 스터디방 개설
     postRoom: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { title, studyState, password, studyType, startingDay, endDay, studygoal, hashTag, max, description } = req.body;
+        const { title, studyState, password, studyType, endDay, studygoal, hashTag, max, description } = req.body;
 
         const date = new Date();
 
         const room_query = `INSERT INTO room (snsId, title, createdAt) VALUES (?,?,?)`;
         const roomInfo_query = `INSERT INTO roomInfo ( studyState, password, studyType, startingDay, endDay, studygoal, hashTag, max, description,  roomId) VALUES (?,?,?,?,?,?,?,?,?,?)`;
-        const existRoom = `SELECT * FROM room WHERE snsId=? AND title=?`
+        const existRoom = `SELECT * FROM room WHERE snsId=? AND title=?`;
 
-        connectDB.query(room_query, [snsId, title, date], function (err, result) {
-            if (err) return res.status(400).send(console.log(err));
-            else {
-                connectDB.query(existRoom, [snsId, title], function (err, result) {
-                    if (err) return res.status(400).send(console.log(err));
-                    else {
-                        connectDB.query(roomInfo_query, [studyState, password, studyType, startingDay, endDay, studygoal, hashTag, max, description, result[result.length - 1].roomId], function (err, result) {
-                            if (err) return res.status(400).send(console.log(err));
-                            else {
-                                res.status(200).send({
-                                    message: 'success'
-                                });
-                            };
-                        });
-                    };
-                });
-            };
-        });
-    },
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            await conn.query(room_query, [snsId, title, date]);
+            const [rows]: [access[], FieldPacket[]] = await conn.query(existRoom, [snsId, title]);
+            console.log(rows[0]);
+            await conn.query(roomInfo_query, [studyState, password, studyType, rows[0].createdAt, endDay, studygoal, hashTag, max, description, rows[0].roomId]);
+            await conn.commit();
+            res.status(200).send({
+                message: "success"
+            });
+        } catch (err) {
+            await conn.rollback();
+            console.log(err);
+        } finally {
+            conn.release();
+        }
+
+        /*
+        try {
+            const promisePool = pool.promise();
+            await promisePool.query(room_query, [snsId, title, date]);
+            const [rows]: [access[], FieldPacket[]] = await promisePool.query(existRoom, [snsId, title]);
+            console.log(rows[0]);
+            await promisePool.query(roomInfo_query, [studyState, password, studyType, rows[0].createdAt, endDay, studygoal, hashTag, max, description, rows[0].roomId]);
+            res.status(200).send({
+                message: "success"
+            });
+        } catch (err) {
+            console.log(err);
+        }
+        */
+    }
 
     // 모든 스터디방 조회
+    /*
     getRoom: async (req: Request, res: Response) => {
         const { studyType, hashTag, studyState } = req.query;
 
@@ -107,4 +128,5 @@ export default {
             }
         });
     },
+    */
 };
