@@ -1,7 +1,7 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import connectDB from "./config/mysql";
+import pool from "./config/mysql";
 import cors from "cors";
 
 const app = express();
@@ -131,46 +131,50 @@ const socket = (server: http.Server) => {
     });
 };
 
-function InsertNickname(roomId: number, snsId: number) {
+async function InsertNickname(roomId: number, snsId: number) {
     const insertUser = `INSERT INTO chatRoom (roomId, snsId) VALUE(?,?)`;
-    /*
+
+    const conn = await pool.getConnection();
+
     try {
-        connectDB.query(insertUser, [roomId, snsId], function (err) {
-            if (err) return console.log(err);
-        });
+        await conn.query(insertUser, [roomId, snsId]);
     } catch (err) {
         return console.log(err);
+    } finally {
+        conn.release();
     };
-    */
-}
 
-function NewMessages(snsId: number, roomId: number, message: string, sendTime: Date) {
+};
+
+async function NewMessages(snsId: number, roomId: number, message: string, sendTime: Date) {
     const insertMsg = `INSERT INTO chatMsg (snsId, roomId, message, sendTime) VALUE(?,?,?,?)`;
-    /*
-    try {
-        connectDB.query(insertMsg, [snsId, roomId, message, sendTime], function (err) {
-            if (err) return console.log(err);
-        });
-    } catch (err) {
-        return console.log(err);
-    };
-    */
-}
 
-function ExistMsg(roomId: number) {
-    const FindMsg = `SELECT nickname, message, sendTime FROM chatMsg as CM JOIN users as U ON U.snsId = CM.snsId WHERE roomId = ?`;
-    /*
+    const conn = await pool.getConnection();
+
     try {
-        connectDB.query(FindMsg, [roomId], function (err, result) {
-            if (err) return console.log(err);
-            else {
-                return result;
-            };
-        });
+        await conn.query(insertMsg, [snsId, roomId, message, sendTime]);
     } catch (err) {
         return console.log(err);
+    } finally {
+        conn.release();
     };
-    */
-}
+
+};
+
+async function ExistMsg(roomId: number) {
+    const FindMsg = `SELECT nickname, message, sendTime FROM chatMsg as CM JOIN users as U ON U.snsId = CM.snsId WHERE roomId = ?`;
+
+    const conn = await pool.getConnection();
+
+    try {
+        const rows = await conn.query(FindMsg, [roomId]);
+        return rows;
+    } catch (err) {
+        return console.log(err);
+    } finally {
+        conn.release();
+    };
+
+};
 
 export default socket;
