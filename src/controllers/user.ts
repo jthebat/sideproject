@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from "express";
-import passport from "passport";
-import pool from "../config/mysql";
-import jwt from "jsonwebtoken";
-import config from "../config/config";
-import { FieldPacket, RowDataPacket } from "mysql2/promise";
+import { NextFunction, Request, Response } from 'express';
+import passport from 'passport';
+import pool from '../config/mysql';
+import jwt from 'jsonwebtoken';
+import config from '../config/config';
+import { FieldPacket, RowDataPacket } from 'mysql2/promise';
 
 interface access extends RowDataPacket {
     nickname: string;
@@ -11,12 +11,12 @@ interface access extends RowDataPacket {
 
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("kakao", { failureRedirect: "/" }, async (err, user, info) => {
+    passport.authenticate('kakao', { failureRedirect: '/' }, async (err, user, info) => {
         if (err) return next(err);
         /**refreshtoken 생성 */
         const refreshToken = jwt.sign({}, config.jwt.secretKey as jwt.Secret, {
-            expiresIn: "14d",
-            issuer: "Martian"
+            expiresIn: '14d',
+            issuer: 'Martian'
         });
         /**accesstoken 생성 서비스 특성상 시간을 길게 보장해줘야하는지 아니면 refreshtoken이 해결해줄수 있는 부분인지? ?? */
         const accessToken = jwt.sign({ info }, config.jwt.secretKey as jwt.Secret, {
@@ -35,9 +35,9 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
             ms('-1h')     // -3600000
             ms('-200')    // -200
             */
-            expiresIn: "1d", //for test
+            expiresIn: '1d', //for test
             // expiresIn: '1h',
-            issuer: "Martian"
+            issuer: 'Martian'
         });
         /**queries */
         const updateQuery = `update users set refreshtoken = ? where snsId = ?`;
@@ -48,11 +48,11 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
             if (user.length === 0) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
                 /**front와 연결후 redirect 주소로 연결 필요 */
-                res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success" });
+                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).json({ status: 'success' });
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
                 /**front와 연결후 redirect 주소로 연결 필요 */
-                res.status(200).cookie("refreshToken", refreshToken).cookie("accessToken", accessToken).json({ status: "success", token: accessToken });
+                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).json({ status: 'success', token: accessToken });
             }
         } catch (err) {
             console.log(err);
@@ -73,7 +73,7 @@ const ADCheck = async (req: Request, res: Response) => {
 
     try {
         await conn.query(insert_Ad, [Ad_check, snsId]);
-        res.status(200).send({ message: "success" });
+        res.status(200).send({ message: 'success' });
     } catch (err) {
         console.log(err);
     } finally {
@@ -86,11 +86,11 @@ const userInfo = async (req: Request, res: Response) => {
     const { user } = res.locals;
 
     if (!user) {
-        return res.status(400).json({ result: false, message: "존재하지 않음" });
+        return res.status(400).json({ result: false, message: '존재하지 않음' });
     }
 
     return res.json({
-        message: "success",
+        message: 'success',
         snsId: user.info.snsId,
         nickname: user.info.nickname
     });
@@ -108,7 +108,7 @@ const signup = async (req: Request, res: Response) => {
 
     try {
         await conn.query(query_2, [nickname, snsId]);
-        res.status(200).send({ message: "success" });
+        res.status(200).send({ message: 'success' });
     } catch (err) {
         console.log(err);
     } finally {
@@ -126,7 +126,7 @@ const character = async (req: Request, res: Response) => {
 
     try {
         await conn.query(query, [charImg, snsId]);
-        res.status(200).send({ message: "success" });
+        res.status(200).send({ message: 'success' });
     } catch (err) {
         console.log(err);
     } finally {
@@ -136,7 +136,7 @@ const character = async (req: Request, res: Response) => {
 
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
-    const { nickname } = req.params;
+    const { nickname } = req.query;
     const query = `SELECT nickname FROM users WHERE nickname=?`;
 
     const conn = await pool.getConnection();
@@ -145,11 +145,11 @@ const nicknameCheck = async (req: Request, res: Response) => {
         const [rows]: [access[], FieldPacket[]] = await conn.query(query, [nickname]);
         if (rows[0]) {
             res.status(400).send({
-                message: "이미 있는 닉네임입니다."
+                message: '이미 있는 닉네임입니다.'
             });
         } else {
             res.status(200).send({
-                message: "사용가능한 닉네임입니다."
+                message: '사용가능한 닉네임입니다.'
             });
         }
     } catch (err) {
