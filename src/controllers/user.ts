@@ -12,6 +12,7 @@ interface access extends RowDataPacket {
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate('kakao', { failureRedirect: '/' }, async (err, user, info) => {
+        console.log(user, info)
         if (err) return next(err);
         /**refreshtoken 생성 */
         const refreshToken = jwt.sign({}, config.jwt.secretKey as jwt.Secret, {
@@ -40,19 +41,19 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
             issuer: 'Martian'
         });
         /**queries */
-        const updateQuery = `update users set refreshtoken = ? where snsId = ?`;
-        const insertQuery = `INSERT INTO users (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+        const updateQuery = `UPDATE USERS SET refreshtoken = ? WHERE snsId = ?`;
+        const insertQuery = `INSERT INTO USERS (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+
         const conn = await pool.getConnection();
 
         try {
-            if (user.length === 0) {
+            if (!user || !user.nickname) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
-                /**front와 연결후 redirect 주소로 연결 필요 */
-                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).json({ status: 'success' });
+
+                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/accessToken=${accessToken}&refreshToken=${refreshToken}`);
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
-                /**front와 연결후 redirect 주소로 연결 필요 */
-                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).json({ status: 'success', token: accessToken });
+                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             }
         } catch (err) {
             console.log(err);
@@ -64,15 +65,15 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
 
 // 광고 수신 동의 확인
 const ADCheck = async (req: Request, res: Response) => {
-    const { Ad_check } = req.body;
+    const { adCheck } = req.body;
     const { snsId } = res.locals.user.info;
 
-    const insert_Ad = `UPDATE users SET AD_Check =? WHERE snsId =?`;
+    const insert_Ad = `UPDATE USERS SET adCheck =? WHERE snsId =?`;
 
     const conn = await pool.getConnection();
 
     try {
-        await conn.query(insert_Ad, [Ad_check, snsId]);
+        await conn.query(insert_Ad, [adCheck, snsId]);
         res.status(200).send({ message: 'success' });
     } catch (err) {
         console.log(err);
@@ -101,8 +102,8 @@ const signup = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
     const { nickname } = req.body;
 
-    // const query_1 = `SELECT snsId FROM users WHERE snsId=?`;
-    const query_2 = `UPDATE users SET nickname=? WHERE snsId=?`;
+    // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
+    const query_2 = `UPDATE USERS SET nickname=? WHERE snsId=?`;
 
     const conn = await pool.getConnection();
 
@@ -120,7 +121,7 @@ const signup = async (req: Request, res: Response) => {
 const character = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
     const { charImg } = req.body;
-    const query = `INSERT INTO userCharacters (charImg, snsId) VALUE(?,?)`;
+    const query = `INSERT INTO userCharacters (charImg, snsId) VALUES (?,?)`;
 
     const conn = await pool.getConnection();
 
@@ -137,7 +138,7 @@ const character = async (req: Request, res: Response) => {
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;
-    const query = `SELECT nickname FROM users WHERE nickname=?`;
+    const query = `SELECT nickname FROM USERS WHERE nickname=?`;
 
     const conn = await pool.getConnection();
 
@@ -159,21 +160,20 @@ const nicknameCheck = async (req: Request, res: Response) => {
     }
 };
 
+
 /*
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
 const signOut = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
+    const conn = await pool.getConnection();
 
-    const signOut = `DELETE FROM users WHERE users.snsId=? IN (SELECT * FROM usersCharacters as UC WHERE UC.snsId=?)`;
+    const signOut = `DELETE FROM USERS WHERE USERS.snsId=? IN (SELECT * FROM USERSCharacters as UC WHERE UC.snsId=?)`;
 
-    connectDB.query(signOut, [snsId], function (err, result) {
-        if (err) return res.status(400).send(console.log(err));
-        else {
-            res.status(200).send({
-                message: "success"
-            });
-        }
+    conn.query(signOut, [snsId]);
+    res.status(200).send({
+        message: "success"
     });
 };
 */
+
 export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck };
