@@ -10,4 +10,6 @@ timeRouter.post('/setDay', authMiddleware, timeCtrl.setDay);
 //
 timeRouter.get('/getDDays', authMiddleware, timeCtrl.getDdays);
 
+timeRouter.delete('/removeDay', authMiddleware, timeCtrl.removeDay);
+
 export { timeRouter };

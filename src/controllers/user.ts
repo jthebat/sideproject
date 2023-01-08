@@ -52,7 +52,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/accessToken=${accessToken}&refreshToken=${refreshToken}`);
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
-                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             }
         } catch (err) {
             console.log(err);
