@@ -12,7 +12,6 @@ interface access extends RowDataPacket {
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate('kakao', { failureRedirect: '/' }, async (err, user, info) => {
-        console.log(user, info)
         if (err) return next(err);
         /**refreshtoken 생성 */
         const refreshToken = jwt.sign({}, config.jwt.secretKey as jwt.Secret, {
@@ -47,7 +46,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         const conn = await pool.getConnection();
 
         try {
-            if (!user || !user.nickname) {
+            if (!user) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
 
                 res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/accessToken=${accessToken}&refreshToken=${refreshToken}`);
@@ -159,7 +158,6 @@ const nicknameCheck = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-
 
 /*
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
