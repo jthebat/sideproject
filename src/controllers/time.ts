@@ -13,11 +13,17 @@ export default {
         const { snsId } = res.locals.user.info;
         const { exam, dday } = req.body;
 
-        const query = `INSERT INTO dDays (snsId ,exam, dday) VALUES (?,?,?)`;
+        const checkquery = `SELECT *FROM DDAYS where DDAYS.exam = ?`;
+        const query = `INSERT INTO DDAYS (snsId ,exam, dday) VALUES (?,?,?)`;
         const conn = await pool.getConnection();
         try {
+            const [result]: [access[], FieldPacket[]] = await conn.query(checkquery, [exam]);
+
+            if (result.length !== 0) {
+                return res.status(200).json({ message: '이미등록된시험' });
+            }
             await conn.query(query, [snsId, exam, dday]);
-            res.status(204).send({ message: 'success' });
+            res.status(201).json({ message: 'success' });
         } catch (err) {
             // console.log(err);
             res.send(err);
@@ -29,7 +35,7 @@ export default {
     // 게시물 전체조회
     getDdays: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const query = `SELECT exam, dday FROM dDays where dDays.snsId = ?`;
+        const query = `SELECT exam, dday FROM DDAYS where DDAYS.snsId = ?`;
 
         const conn = await pool.getConnection();
 
@@ -41,14 +47,40 @@ export default {
                 let dday = new Date(item.dday).getTime();
                 let gap = dday - today.getTime();
                 let result = Math.ceil(gap / (1000 * 60 * 60 * 24));
-                return { exam: item.exam, dday: result };
+                return { exam: item.exam, dday: result, eday: item.dday };
             });
+            let followingExam = result.filter((item) => {
+                return item.dday >= 0;
+            });
+            followingExam.sort((a, b) => a.dday - b.dday);
+            let pastExam = result.filter((item) => {
+                return item.dday < 0;
+            });
+            result = followingExam.concat(pastExam);
+
             res.status(200).send({
                 message: 'success',
                 rows: result
             });
         } catch (err) {
             console.log(err);
+        } finally {
+            conn.release();
+        }
+    },
+
+    removeDay: async (req: Request, res: Response) => {
+        const { snsId } = res.locals.user.info;
+        const { exam } = req.query;
+
+        const query = `DELETE FROM DDAYS where DDAYS.snsId = ? AND DDAYS.exam = ?`;
+        const conn = await pool.getConnection();
+        try {
+            await conn.query(query, [snsId, exam]);
+            res.status(200).send({ message: 'success' });
+        } catch (err) {
+            // console.log(err);
+            res.send(err);
         } finally {
             conn.release();
         }
