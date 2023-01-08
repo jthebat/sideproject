@@ -69,6 +69,7 @@ export default {
         }
     },
 
+    // D-day 게시물 삭제
     removeDay: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
         const { exam } = req.query;
@@ -83,8 +84,9 @@ export default {
             res.send(err);
         } finally {
             conn.release();
-        }
+        };
     },
+
     // timer 시작
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;

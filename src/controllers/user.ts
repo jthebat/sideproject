@@ -46,10 +46,13 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         const conn = await pool.getConnection();
 
         try {
-            if (!user || !user.nickname) {
+            if (!user) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
 
-                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/accessToken=${accessToken}&refreshToken=${refreshToken}`);
+                res.status(200)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
                 res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
@@ -158,7 +161,6 @@ const nicknameCheck = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-
 
 /*
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
