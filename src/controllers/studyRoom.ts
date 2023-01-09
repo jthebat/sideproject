@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
-import pool from "../config/mysql";
-import { FieldPacket, RowDataPacket } from "mysql2";
+import { Request, Response } from 'express';
+import pool from '../config/mysql';
+import { FieldPacket, RowDataPacket } from 'mysql2';
 
 interface access extends RowDataPacket {
     snsId: string;
     roomId: number;
-    title: string;
+    // title: string;
     createdAt: Date;
 }
 
@@ -13,13 +13,13 @@ export default {
     // 스터디방 개설
     postRoom: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { title, cam, password, studyType, endDay, studygoal, hashTag, max, description } = req.body;
+        const { title, cam, password, studyType, endDay, studyGoal, hashTag, max, description } = req.body;
 
         const date = new Date();
 
-        const room_query = `INSERT INTO ROOM (snsId, title, createdAt) VALUES (?,?,?)`;
-        const roomInfo_query = `INSERT INTO ROOMINFO ( cam, password, studyType, startingDay, endDay, studyGoal, hashTag, max, description,  roomId) VALUES (?,?,?,?,?,?,?,?,?,?)`;
-        const existRoom = `SELECT * FROM ROOM WHERE snsId=? AND title=?`;
+        const room_query = `INSERT INTO ROOMS (snsId, title, createdAt) VALUES (?,?,?)`;
+        const roomInfo_query = `INSERT INTO ROOMINFO ( cam, host, password, studyType, startingDay, endDay, studyGoal, hashTag, max, description,  roomId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
+        const existRoom = `SELECT * FROM ROOMS WHERE snsId=? AND title=?`;
 
         const conn = await pool.getConnection();
         try {
@@ -27,10 +27,10 @@ export default {
             await conn.query(room_query, [snsId, title, date]);
             const [rows]: [access[], FieldPacket[]] = await conn.query(existRoom, [snsId, title]);
 
-            await conn.query(roomInfo_query, [cam, password, studyType, rows[0].createdAt, endDay, studygoal, hashTag, max, description, rows[0].roomId]);
+            await conn.query(roomInfo_query, [cam, snsId, password, studyType, rows[0].createdAt, endDay, studyGoal, hashTag, max, description, rows[0].roomId]);
             await conn.commit();
-            res.status(200).send({
-                message: "success"
+            res.status(201).send({
+                message: 'success'
             });
         } catch (err) {
             await conn.rollback();
@@ -119,12 +119,12 @@ export default {
         const { snsId } = res.locals.user.info;
         const conn = await pool.getConnection();
 
-        const myRoomList = `SELECT roomId, title FROM ROOM WHERE snsId=?`;
+        const myRoomList = `SELECT roomId, title FROM ROOMS WHERE snsId=?`;
 
         const [roomList]: [access[], FieldPacket[]] = await conn.query(myRoomList, [snsId]);
         res.status(200).send({
             message: 'success',
             roomList
         });
-    },
+    }
 };
