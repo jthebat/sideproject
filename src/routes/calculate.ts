@@ -17,14 +17,6 @@ timeRouter.delete('/removeDay', authMiddleware, timeCtrl.removeDay);
 timeRouter.post('/startTime', authMiddleware, timeCtrl.startTime);
 
 // timer 끝
-timeRouter.put('/endTime', authMiddleware, timeCtrl.endTime)
-
-// 게시물 작성
-timeRouter.post('/setDay', authMiddleware, timeCtrl.setDay);
-
-//
-timeRouter.get('/getDDays', authMiddleware, timeCtrl.getDdays);
-
-timeRouter.delete('/removeDay', authMiddleware, timeCtrl.removeDay);
+timeRouter.put('/endTime', authMiddleware, timeCtrl.endTime);
 
 export { timeRouter };
