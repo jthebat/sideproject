@@ -80,7 +80,6 @@ export default {
             await conn.query(query, [snsId, exam]);
             res.status(200).send({ message: 'success' });
         } catch (err) {
-            // console.log(err);
             res.send(err);
         } finally {
             conn.release();
@@ -90,11 +89,10 @@ export default {
     // timer 시작
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { getDate } = req.body;
 
-        const studyDate = getDate.toLocaleDateString();
+        const getDate = new Date();
+        const studyDate = getDate.toISOString().split('T')[0];
         const startTime = getDate.toLocaleTimeString().slice(0, -3);
-
 
         const conn = await pool.getConnection();
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate, startTime) VALUES (?,?,?)`;
@@ -114,16 +112,17 @@ export default {
     // timer 끝
     endTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { studyTime, endTime } = req.body;
+        const { studyTime } = req.body;
+        const getDate = new Date();
 
         const conn = await pool.getConnection();
         const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId = ? AND studyDate =?`
 
-        const makeEndTime = endTime.toLocaleTimeString().slice(0, -3)();
-        const studyDate = endTime.toLocaleDateString();
+        const studyDate = getDate.toISOString().split('T')[0];
+        const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
 
         try {
-            await conn.query(UpdateTime, [studyTime, makeEndTime, studyDate, snsId, studyDate]);
+            await conn.query(UpdateTime, [studyTime, makeEndTime, snsId, studyDate]);
 
             res.status(200).send({
                 message: 'success',
