@@ -4,6 +4,7 @@ import config from '../config/config';
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const authorization = req.headers.authorization as string;
+    console.log('auth: ', authorization);
 
     const [tokentype, tokenvalue] = authorization.split(' ');
     if (tokenvalue == 'null') {
