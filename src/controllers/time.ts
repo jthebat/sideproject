@@ -5,6 +5,8 @@ import pool from '../config/mysql';
 interface access extends RowDataPacket {
     exam: string;
     dday: Date;
+    studyDate: Date;
+    endTime: string;
 }
 
 export default {
@@ -116,20 +118,16 @@ export default {
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
 
-        const getDate = new Date();
-        const studyDate = getDate.toISOString().split('T')[0];
-        const startTime = getDate.toLocaleTimeString().slice(0, -3);
-
         const conn = await pool.getConnection();
-        const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate, startTime) VALUES (?,?,?)`;
+        const insertTime = `INSERT INTO STUDYTIME (snsId) VALUES (?)`;
 
         try {
-            await conn.query(insertTime, [snsId, studyDate, startTime]);
+            await conn.query(insertTime, [snsId]);
             res.status(200).send({
                 message: 'success'
             });
         } catch (err) {
-            console.log(err);
+            res.send(err);
         } finally {
             conn.release();
         }
@@ -139,24 +137,38 @@ export default {
     endTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
         const { studyTime } = req.body;
+
         const getDate = new Date();
-
-        const conn = await pool.getConnection();
-        const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId = ? AND studyDate =?`;
-
-        const studyDate = getDate.toISOString().split('T')[0];
+        const endDate = getDate.toISOString().split('T')[0];
         const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
 
-        try {
-            await conn.query(UpdateTime, [studyTime, makeEndTime, snsId, studyDate]);
+        const conn = await pool.getConnection();
+        const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND endTime=?`
+        const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
 
-            res.status(200).send({
-                message: 'success'
-            });
+        try {
+            const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, '']);
+
+            if (!existStudyTime.length) {
+                return res.status(400).send({
+                    errorMessage: '현재 등록된 데이터가 없습니다!'
+                });
+            }
+
+            let theTime = existStudyTime[0].studyDate.toISOString().split('T')[0];
+
+            if (theTime === endDate) {
+                await conn.query(UpdateTime, [studyTime, makeEndTime, snsId, existStudyTime[0].studyDate]);
+
+                return res.status(200).send({
+                    message: 'success'
+                });
+            }
+
         } catch (err) {
-            console.log(err);
+            res.send(err);
         } finally {
             conn.release();
         }
-    }
+    },
 };
