@@ -13,6 +13,9 @@ timeRouter.get('/getDDays', authMiddleware, timeCtrl.getDdays);
 // D-day 삭제
 timeRouter.delete('/removeDay', authMiddleware, timeCtrl.removeDay);
 
+// D-day 수정
+timeRouter.put('/modifyDay', authMiddleware, timeCtrl.modifyDay);
+
 // timer 시작
 timeRouter.post('/startTime', authMiddleware, timeCtrl.startTime);
 

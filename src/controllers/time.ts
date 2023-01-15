@@ -13,11 +13,11 @@ export default {
         const { snsId } = res.locals.user.info;
         const { exam, dday } = req.body;
 
-        const checkquery = `SELECT *FROM DDAYS where DDAYS.exam = ?`;
+        const checkquery = `SELECT *FROM DDAYS where DDAYS.exam = ? and DDAYS.snsId = ?`;
         const query = `INSERT INTO DDAYS (snsId ,exam, dday) VALUES (?,?,?)`;
         const conn = await pool.getConnection();
         try {
-            const [result]: [access[], FieldPacket[]] = await conn.query(checkquery, [exam]);
+            const [result]: [access[], FieldPacket[]] = await conn.query(checkquery, [exam, snsId]);
 
             if (result.length !== 0) {
                 return res.status(200).json({ message: '이미등록된시험' });
@@ -69,6 +69,32 @@ export default {
         }
     },
 
+    // D-day 게시물 수정
+    modifyDay: async (req: Request, res: Response) => {
+        const { snsId } = res.locals.user.info;
+        const { pexam } = req.query;
+        const { exam, dday } = req.body;
+
+        const checkquery = `SELECT *FROM DDAYS where DDAYS.exam = ? and DDAYS.snsId = ?`;
+        const query = `UPDATE DDAYS SET exam=?, dday=? WHERE DDAYS.exam=? AND DDAYS.snsId = ?`;
+        const conn = await pool.getConnection();
+        try {
+            const [result]: [access[], FieldPacket[]] = await conn.query(checkquery, [exam, snsId]);
+
+            if (result.length !== 0) {
+                return res.status(200).json({ message: '이미등록된시험' });
+            }
+
+            await conn.query(query, [exam, dday, pexam, snsId]);
+            res.status(201).json({ message: 'success' });
+        } catch (err) {
+            // console.log(err);
+            res.send(err);
+        } finally {
+            conn.release();
+        }
+    },
+
     // D-day 게시물 삭제
     removeDay: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
@@ -83,7 +109,7 @@ export default {
             res.send(err);
         } finally {
             conn.release();
-        };
+        }
     },
 
     // timer 시작
@@ -100,13 +126,13 @@ export default {
         try {
             await conn.query(insertTime, [snsId, studyDate, startTime]);
             res.status(200).send({
-                message: 'success',
+                message: 'success'
             });
         } catch (err) {
             console.log(err);
         } finally {
             conn.release();
-        };
+        }
     },
 
     // timer 끝
@@ -116,7 +142,7 @@ export default {
         const getDate = new Date();
 
         const conn = await pool.getConnection();
-        const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId = ? AND studyDate =?`
+        const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId = ? AND studyDate =?`;
 
         const studyDate = getDate.toISOString().split('T')[0];
         const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
@@ -125,12 +151,12 @@ export default {
             await conn.query(UpdateTime, [studyTime, makeEndTime, snsId, studyDate]);
 
             res.status(200).send({
-                message: 'success',
+                message: 'success'
             });
         } catch (err) {
             console.log(err);
         } finally {
             conn.release();
-        };
-    },
+        }
+    }
 };
