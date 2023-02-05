@@ -23,7 +23,7 @@ userRouter.put('/nickname', authMiddleware, userController.signup);
 userRouter.post('/character', authMiddleware, userController.character);
 
 // 닉네임 중복체크
-userRouter.get('/checknickname', userController.nicknameCheck);
+userRouter.get('/checknickname', userController.nicknameList);
 
 // 탈퇴
 // userRouter.delete('/signout', authMiddleware, userController.signOut);
