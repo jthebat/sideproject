@@ -118,11 +118,19 @@ export default {
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
 
+        const offset = 1000 * 60 * 60 * 9;
+        const koreaNow = new Date(new Date().getTime() + offset);
+
         const conn = await pool.getConnection();
-        const insertTime = `INSERT INTO STUDYTIME (snsId) VALUES (?)`;
+        const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
+        const findTime = `SELECT studyDate FROM STUDYTIME WHERE snsId = ?`;
 
         try {
-            await conn.query(insertTime, [snsId]);
+            await conn.query(insertTime, [snsId, koreaNow]);
+
+            const [findThat] = await conn.query(findTime, [snsId]);
+            console.log(findThat);
+
             res.status(200).send({
                 message: 'success'
             });
@@ -143,7 +151,7 @@ export default {
         const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
 
         const conn = await pool.getConnection();
-        const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND endTime=?`
+        const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND endTime=?`;
         const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
 
         try {
@@ -164,11 +172,10 @@ export default {
                     message: 'success'
                 });
             }
-
         } catch (err) {
             res.send(err);
         } finally {
             conn.release();
         }
-    },
+    }
 };
