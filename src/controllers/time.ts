@@ -150,6 +150,8 @@ export default {
         const endDate = getDate.toISOString().split('T')[0];
         const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
 
+        console.log(getDate, endDate, makeEndTime);
+
         const conn = await pool.getConnection();
         const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND endTime=?`;
         const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
