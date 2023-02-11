@@ -146,7 +146,9 @@ export default {
         const { snsId } = res.locals.user.info;
         const { studyTime } = req.body;
 
-        const getDate = new Date();
+        const offset = 1000 * 60 * 60 * 9;
+        const getDate = new Date(new Date().getTime() + offset);
+
         const endDate = getDate.toISOString().split('T')[0];
         const makeEndTime = getDate.toLocaleTimeString('ko-KR').slice(0, -3);
 
