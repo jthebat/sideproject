@@ -136,7 +136,7 @@ const character = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-/*
+
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;
@@ -161,22 +161,6 @@ const nicknameCheck = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-*/
-// 닉네임 중복체크 FE에서
-const nicknameList = async (req: Request, res: Response) => {
-    const query = 'SElECT nickname FROM USERS';
-
-    const conn = await pool.getConnection();
-
-    try {
-        const [result] = await conn.query(query);
-        res.status(200).send({ message: 'success', result });
-    } catch (err) {
-        console.log(err);
-    } finally {
-        conn.release();
-    }
-};
 /*
 // 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
 const signOut = async (req: Request, res: Response) => {
@@ -192,4 +176,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameList };
+export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck };
