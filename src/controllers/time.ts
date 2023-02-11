@@ -148,7 +148,7 @@ export default {
 
         const getDate = new Date();
         const endDate = getDate.toISOString().split('T')[0];
-        const makeEndTime = getDate.toLocaleTimeString().slice(0, -3);
+        const makeEndTime = getDate.toLocaleTimeString('ko-KR').slice(0, -3);
 
         console.log(getDate, endDate, makeEndTime);
 
