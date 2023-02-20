@@ -7,6 +7,7 @@ interface access extends RowDataPacket {
     dday: Date;
     studyDate: Date;
     endTime: string;
+    total: number;
 }
 
 export default {
@@ -176,6 +177,64 @@ export default {
                     message: 'success'
                 });
             }
+        } catch (err) {
+            res.send(err);
+        } finally {
+            conn.release();
+        }
+    },
+
+    getRecord: async (req: Request, res: Response) => {
+        const { snsId } = res.locals.user.info;
+        const { firstDay, lastDay } = req.query;
+
+        const conn = await pool.getConnection();
+        const query = `select studyDate, sum(studyTime)as total from (select substring_index(studyDate,' ',1)as studyDate , studyTime from tsdatabase.STUDYTIME where snsId=? and CAST(studyDate AS DATE) between ? and ?) A group by studyDate`;
+
+        let getDaysArray = function (start: any, end: any) {
+            for (var arr = [], dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+                arr.push(new Date(dt).toISOString().split('T')[0]);
+            }
+            return arr;
+        };
+
+        let daylist = getDaysArray(new Date(String(firstDay)), new Date(String(lastDay)));
+
+        try {
+            const [rows]: [access[], FieldPacket[]] = await conn.query(query, [snsId, firstDay, lastDay]);
+            console.log(rows);
+            let max = Math.max.apply(
+                Math,
+                rows.map((o) => o.total)
+            );
+            let min = Math.min.apply(
+                Math,
+                rows.map((o) => o.total)
+            );
+
+            let p = 0;
+            let result = [];
+
+            for (let m = 0; m < daylist.length - 1; m++) {
+                if (daylist[m] == String(rows[p].studyDate)) {
+                    result.push(rows[p]);
+                    p++;
+                } else {
+                    result.push({ studyDate: daylist[m], total: '0' });
+                }
+            }
+            let total = 0;
+            result.map((obj) => {
+                total = total + Number(obj.total);
+            });
+
+            return res.status(200).send({
+                message: 'success',
+                result,
+                max,
+                min,
+                avg: total / result.length
+            });
         } catch (err) {
             res.send(err);
         } finally {
