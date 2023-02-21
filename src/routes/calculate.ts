@@ -22,7 +22,10 @@ timeRouter.post('/startTime', authMiddleware, timeCtrl.startTime);
 // timer 끝
 timeRouter.put('/endTime', authMiddleware, timeCtrl.endTime);
 
-// 공부시간 통계 조회
+// 주,월 공부시간 통계 조회
 timeRouter.get('/getRecord', authMiddleware, timeCtrl.getRecord);
+
+// 일별 공부시간 통계 조회
+timeRouter.get('/dayrecord', authMiddleware, timeCtrl.getDayRecord);
 
 export { timeRouter };

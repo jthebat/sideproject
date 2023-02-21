@@ -137,6 +137,29 @@ const character = async (req: Request, res: Response) => {
     }
 };
 
+// 보유캐릭터 확인
+const existCharacter = async (req: Request, res: Response) => {
+    const { snsId } = res.locals.user.info;
+
+    const existCharacter = `SELECT charImg FROM CHARACTERS WHERE snsId=?`
+
+    const conn = await pool.getConnection();
+
+    try {
+        const [rows]: [access[], FieldPacket[]] = await conn.query(existCharacter, [snsId]);
+
+        return res.status(200).send({
+            total: rows.length,
+            character: rows,
+        });
+
+    } catch (err) {
+        res.send(err);
+    } finally {
+        conn.release();
+    }
+};
+
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;
@@ -176,4 +199,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck };
+export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck, existCharacter };
