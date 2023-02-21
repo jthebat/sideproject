@@ -6,7 +6,8 @@ interface access extends RowDataPacket {
     exam: string;
     dday: Date;
     studyDate: Date;
-    endTime: string;
+    endTime: Date;
+    studyTime: number;
     total: number;
 }
 
@@ -28,7 +29,6 @@ export default {
             await conn.query(query, [snsId, exam, dday]);
             res.status(201).json({ message: 'success' });
         } catch (err) {
-            // console.log(err);
             res.send(err);
         } finally {
             conn.release();
@@ -66,7 +66,7 @@ export default {
                 rows: result
             });
         } catch (err) {
-            console.log(err);
+            res.send(err);
         } finally {
             conn.release();
         }
@@ -103,7 +103,7 @@ export default {
         const { snsId } = res.locals.user.info;
         const { exam } = req.query;
 
-        const query = `DELETE FROM DDAYS where DDAYS.snsId = ? AND DDAYS.exam = ?`;
+        const query = `DELETE FROM DDAYS WHERE DDAYS.snsId = ? AND DDAYS.exam = ?`;
         const conn = await pool.getConnection();
         try {
             await conn.query(query, [snsId, exam]);
@@ -119,21 +119,19 @@ export default {
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
 
+        // 한국시간
         const offset = 1000 * 60 * 60 * 9;
         const koreaNow = new Date(new Date().getTime() + offset);
 
         const conn = await pool.getConnection();
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
-        const findTime = `SELECT studyDate FROM STUDYTIME WHERE snsId = ?`;
 
         try {
             await conn.query(insertTime, [snsId, koreaNow]);
 
-            const [findThat] = await conn.query(findTime, [snsId]);
-            console.log(findThat);
-
             res.status(200).send({
-                message: 'success'
+                message: 'success',
+                startTime: koreaNow
             });
         } catch (err) {
             res.send(err);
@@ -145,22 +143,23 @@ export default {
     // timer 끝
     endTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { studyTime } = req.body;
+        const { startTime, split, studyTime } = req.body;
 
+        // 한국시간
         const offset = 1000 * 60 * 60 * 9;
         const getDate = new Date(new Date().getTime() + offset);
-
         const endDate = getDate.toISOString().split('T')[0];
-        const makeEndTime = getDate.toLocaleTimeString('ko-KR').slice(0, -3);
-
-        console.log(getDate, endDate, makeEndTime);
 
         const conn = await pool.getConnection();
-        const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND endTime=?`;
-        const UpdateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
+        const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
+        const updateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
+        const insertTime = `INSERT INTO STUDYTIME (snsId ,studyDate, studyTime, endTime) VALUES (?,?,?,?)`;
+        const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `
 
         try {
-            const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, '']);
+            const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, startTime]);
+            const studyDate = existStudyTime[0].studyDate;
+            const theTime = studyDate.toISOString().split('T')[0];
 
             if (!existStudyTime.length) {
                 return res.status(400).send({
@@ -168,15 +167,35 @@ export default {
                 });
             }
 
-            let theTime = existStudyTime[0].studyDate.toISOString().split('T')[0];
+            // 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
+            if (studyDate.getTime() - getDate.getTime() >= 8.64e+7) {
+                await conn.query(deleteTime, [snsId, studyDate]);
+                return res.status(200).send({
+                    message: 'Data delete success!'
+                });
+            }
 
-            if (theTime === endDate) {
-                await conn.query(UpdateTime, [studyTime, makeEndTime, snsId, existStudyTime[0].studyDate]);
+            if (!split) {
+                if (theTime === endDate) {
+                    await conn.query(updateTime, [studyTime, getDate, snsId, studyDate]);
+
+                    return res.status(200).send({
+                        message: 'success'
+                    });
+                }
+            } else {
+                if (theTime === endDate) {
+                    const endDateTime = new Date(`${theTime} 23:59:59`);
+                    await conn.query(updateTime, [studyTime, endDateTime, snsId, studyDate]);
+                }
+
+                const beforeDate = new Date(`${endDate} 00:00:00`);
+                await conn.query(insertTime, [snsId, beforeDate, studyTime, getDate]);
 
                 return res.status(200).send({
                     message: 'success'
                 });
-            }
+            };
         } catch (err) {
             res.send(err);
         } finally {
@@ -184,6 +203,31 @@ export default {
         }
     },
 
+    // 일별 통계 조회
+    getDayRecord: async (req: Request, res: Response) => {
+        const { snsId } = res.locals.user.info;
+        const { theDay } = req.query;
+
+        const conn = await pool.getConnection();
+        const getData = `SELECT studyDate, studyTime, endTime FROM STUDYTIME WHERE snsId=? AND DATE(studyDate)=DATE(?)`;
+
+        try {
+            const [existData]: [access[], FieldPacket[]] = await conn.query(getData, [snsId, theDay]);
+            const data = existData.map((x) => ({
+                startTime: x.studyDate.toLocaleTimeString('ko-KR').slice(0, -3),
+                studyTime: x.studyTime,
+                endTime: x.endTime.toLocaleTimeString('ko-KR').slice(0, -3)
+            }));
+
+            res.status(200).send(data);
+        } catch (err) {
+            res.send(err);
+        } finally {
+            conn.release();
+        }
+    },
+
+    // 공부시간 통계 조회 (주, 월)
     getRecord: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
         const { firstDay, lastDay } = req.query;
@@ -202,7 +246,7 @@ export default {
 
         try {
             const [rows]: [access[], FieldPacket[]] = await conn.query(query, [snsId, firstDay, lastDay]);
-            console.log(rows);
+
             let max = Math.max.apply(
                 Math,
                 rows.map((o) => o.total)
@@ -240,5 +284,5 @@ export default {
         } finally {
             conn.release();
         }
-    }
+    },
 };

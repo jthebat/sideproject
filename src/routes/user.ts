@@ -2,6 +2,7 @@ import express from 'express';
 import userController from '../controllers/user';
 import passport from 'passport';
 import { authMiddleware } from '../middlewares/auth-middleware';
+import user from '../controllers/user';
 const userRouter = express.Router();
 
 // kakao login
@@ -21,6 +22,9 @@ userRouter.put('/nickname', authMiddleware, userController.signup);
 
 // 캐릭터 저장
 userRouter.post('/character', authMiddleware, userController.character);
+
+// 보유캐릭터 가오기
+userRouter.get('/getcharacter', authMiddleware, userController.existCharacter);
 
 // 닉네임 중복체크
 userRouter.get('/checknickname', userController.nicknameCheck);
