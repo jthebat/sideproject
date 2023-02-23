@@ -158,8 +158,6 @@ export default {
 
         try {
             const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, startTime]);
-            const studyDate = existStudyTime[0].studyDate;
-            const theTime = studyDate.toISOString().split('T')[0];
 
             if (!existStudyTime.length) {
                 return res.status(400).send({
@@ -167,14 +165,18 @@ export default {
                 });
             }
 
+            const studyDate = existStudyTime[0].studyDate;
+            const theTime = studyDate.toISOString().split('T')[0];
+
             // 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
-            if (studyDate.getTime() - getDate.getTime() >= 8.64e+7) {
+            if (getDate.getTime() - studyDate.getTime() >= 8.64e+7) {  // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
                 await conn.query(deleteTime, [snsId, studyDate]);
                 return res.status(200).send({
                     message: 'Data delete success!'
                 });
             }
 
+            // 24시 기준 분리
             if (!split) {
                 if (theTime === endDate) {
                     await conn.query(updateTime, [studyTime, getDate, snsId, studyDate]);
@@ -184,10 +186,8 @@ export default {
                     });
                 }
             } else {
-                if (theTime === endDate) {
-                    const endDateTime = new Date(`${theTime} 23:59:59`);
-                    await conn.query(updateTime, [studyTime, endDateTime, snsId, studyDate]);
-                }
+                const endDateTime = new Date(`${theTime} 23:59:59`);
+                await conn.query(updateTime, [studyTime, endDateTime, snsId, studyDate]);
 
                 const beforeDate = new Date(`${endDate} 00:00:00`);
                 await conn.query(insertTime, [snsId, beforeDate, studyTime, getDate]);
