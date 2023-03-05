@@ -5,20 +5,20 @@ import config from '../config/config';
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const authorization = req.headers.authorization as string;
     console.log('auth: ', authorization);
-
-    const [tokentype, tokenvalue] = authorization.split(' ');
-    if (tokenvalue == 'null') {
-        res.locals.users = null;
-        next();
-        return;
-    }
-    if (tokentype !== 'Bearer') {
-        res.status(401).send({
-            message: '토큰값 에러'
-        });
-        return;
-    }
     try {
+        const [tokentype, tokenvalue] = authorization.split(' ');
+        if (tokenvalue == 'null') {
+            res.locals.users = null;
+            next();
+            return;
+        }
+        if (tokentype !== 'Bearer') {
+            res.status(401).send({
+                message: '토큰값 에러'
+            });
+            return;
+        }
+
         const user: jwt.JwtPayload | string = jwt.verify(tokenvalue, config.jwt.secretKey as jwt.Secret);
 
         res.locals = { user };
