@@ -68,7 +68,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                     .redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             }
         } catch (err) {
-            console.log(err);
+            res.send(err);
         } finally {
             conn.release();
         }
@@ -88,7 +88,7 @@ const ADCheck = async (req: Request, res: Response) => {
         await conn.query(insert_Ad, [adCheck, snsId]);
         res.status(200).send({ message: 'success' });
     } catch (err) {
-        console.log(err);
+        res.send(err);
     } finally {
         conn.release();
     }
@@ -97,16 +97,26 @@ const ADCheck = async (req: Request, res: Response) => {
 // 로그인한 유저에 대한 정보 가져오기
 const userInfo = async (req: Request, res: Response) => {
     const { user } = res.locals;
+    const findNickname = `SELECT nickname FROM USERS WHERE snsId=?`;
+    const conn = await pool.getConnection();
 
-    if (!user) {
-        return res.status(400).json({ result: false, message: '존재하지 않음' });
+    try {
+        if (!user) {
+            return res.status(400).json({ result: false, message: '존재하지 않음' });
+        }
+
+        const [userinfo]: [access[], FieldPacket[]] = await conn.query(findNickname, [user.info.snsId]);
+
+        return res.json({
+            message: 'success',
+            snsId: user.info.snsId,
+            nicknmae: userinfo[0].nickname
+        });
+    } catch (err) {
+        res.send(err);
+    } finally {
+        conn.release();
     }
-
-    return res.json({
-        message: 'success',
-        snsId: user.info.snsId,
-        nickname: user.info.nickname
-    });
 };
 
 // 닉네임 변경
@@ -123,7 +133,7 @@ const signup = async (req: Request, res: Response) => {
         await conn.query(query_2, [nickname, snsId]);
         res.status(200).send({ message: 'success' });
     } catch (err) {
-        console.log(err);
+        res.send(err);
     } finally {
         conn.release();
     }
@@ -143,7 +153,7 @@ const darkMode = async (req: Request, res: Response) => {
         await conn.query(query_2, [dark, snsId]);
         res.status(200).send({ message: 'success' });
     } catch (err) {
-        console.log(err);
+        res.send(err);
     } finally {
         conn.release();
     }
@@ -161,7 +171,7 @@ const character = async (req: Request, res: Response) => {
         await conn.query(query, [charImg, snsId]);
         res.status(200).send({ message: 'success' });
     } catch (err) {
-        console.log(err);
+        res.send(err);
     } finally {
         conn.release();
     }
@@ -208,7 +218,7 @@ const nicknameCheck = async (req: Request, res: Response) => {
             });
         }
     } catch (err) {
-        console.log(err);
+        res.send(err);
     } finally {
         conn.release();
     }
