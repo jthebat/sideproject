@@ -20,6 +20,9 @@ userRouter.get('/me', authMiddleware, userController.userInfo);
 // 닉네임 변경
 userRouter.put('/nickname', authMiddleware, userController.signup);
 
+// 스크린모드 변경 default or dark
+userRouter.put('/onDark', authMiddleware, userController.darkMode);
+
 // 캐릭터 저장
 userRouter.post('/character', authMiddleware, userController.character);
 

@@ -7,6 +7,7 @@ import { FieldPacket, RowDataPacket } from 'mysql2/promise';
 
 interface access extends RowDataPacket {
     nickname: string;
+    darkMode: boolean;
 }
 
 //카카오 콜백
@@ -50,12 +51,21 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
 
                 res.status(200)
+                    // .send(rows)
+                    .cookie('screenMode', 0)
                     .cookie('refreshToken', refreshToken)
                     .cookie('accessToken', accessToken)
                     .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
-                res.status(200).cookie('refreshToken', refreshToken).cookie('accessToken', accessToken).redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+                const [rows]: [access[], FieldPacket[]] = await conn.query(`SELECT darkMode FROM USERS WHERE snsId = ?`, [info.snsId]);
+
+                res.status(200)
+                    // .send(rows)
+                    .cookie('screenMode', rows[0].darkMode)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
             }
         } catch (err) {
             console.log(err);
@@ -119,6 +129,26 @@ const signup = async (req: Request, res: Response) => {
     }
 };
 
+// 스크린모드 변경
+const darkMode = async (req: Request, res: Response) => {
+    const { snsId } = res.locals.user.info;
+    const { dark } = req.body;
+
+    // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
+    const query_2 = `UPDATE USERS SET darkMode=? WHERE snsId=?`;
+
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.query(query_2, [dark, snsId]);
+        res.status(200).send({ message: 'success' });
+    } catch (err) {
+        console.log(err);
+    } finally {
+        conn.release();
+    }
+};
+
 // 캐릭터 저장
 const character = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
@@ -141,7 +171,7 @@ const character = async (req: Request, res: Response) => {
 const existCharacter = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
 
-    const existCharacter = `SELECT charImg FROM CHARACTERS WHERE snsId=?`
+    const existCharacter = `SELECT charImg FROM CHARACTERS WHERE snsId=?`;
 
     const conn = await pool.getConnection();
 
@@ -150,9 +180,8 @@ const existCharacter = async (req: Request, res: Response) => {
 
         return res.status(200).send({
             total: rows.length,
-            character: rows,
+            character: rows
         });
-
     } catch (err) {
         res.send(err);
     } finally {
@@ -199,4 +228,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, character, nicknameCheck, existCharacter };
+export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, nicknameCheck, existCharacter };
