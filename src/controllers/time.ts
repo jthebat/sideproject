@@ -122,7 +122,8 @@ export default {
         //* CHECK: front에서도 response 값이 한국시간으로 나오는지 확인
         //* 한국시간 - response 용
         const offset = 1000 * 60 * 60 * 9;
-        const koreaNow = new Date(new Date().getTime() + offset);
+        const koreaNow = new Date(new Date().getTime() + offset).toLocaleString('ko-KR');
+        console.log(koreaNow)
 
         //* DB용
         const today = new Date()
@@ -157,6 +158,8 @@ export default {
         const getDate = new Date(new Date().getTime() + offset);
         const endDate = getDate.toISOString().split('T')[0];
 
+        const today = new Date();
+
 
         //* sql
         const conn = await pool.getConnection();
@@ -167,6 +170,7 @@ export default {
 
         try {
             const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, startTime]);
+            console.log(existStudyTime)
 
             if (!existStudyTime.length) {
                 return res.status(400).send({
@@ -176,6 +180,7 @@ export default {
 
             const studyDate = existStudyTime[0].studyDate;
             const theTime = studyDate.toISOString().split('T')[0];
+            console.log(studyDate, theTime)
 
             // 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
             if (getDate.getTime() - studyDate.getTime() >= 8.64e+7) {  // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
@@ -187,7 +192,7 @@ export default {
 
             // 24시 기준 분리
             if (theTime === endDate) {
-                await conn.query(updateTime, [getDate, snsId, studyDate]);
+                await conn.query(updateTime, [today, snsId, studyDate]);
 
                 return res.status(200).send({
                     message: 'success'
