@@ -119,10 +119,13 @@ export default {
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
 
-        // 한국시간
-        // const offset = 1000 * 60 * 60 * 9;
-        // const koreaNow = new Date(new Date().getTime() + offset);
-        const today = new Date()  //* DB에 서울시간으로 들어가는지 CHECK
+        //* CHECK: front에서도 response 값이 한국시간으로 나오는지 확인
+        //* 한국시간 - response 용
+        const offset = 1000 * 60 * 60 * 9;
+        const koreaNow = new Date(new Date().getTime() + offset);
+
+        //* DB용
+        const today = new Date();
 
         const conn = await pool.getConnection();
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
@@ -130,9 +133,11 @@ export default {
         try {
             await conn.query(insertTime, [snsId, today]);
 
+
             res.status(200).send({
                 message: 'success',
-                startTime: today
+                startTime: koreaNow,
+                today
             });
 
         } catch (err) {
@@ -147,11 +152,16 @@ export default {
         const { snsId } = res.locals.user.info;
         const { startTime } = req.body;
 
+        let timeArr = startTime.split("");
+        timeArr.pop();
+        const reStartTime = timeArr.join("");
+
         //*  한국시간
         const offset = 1000 * 60 * 60 * 9;
         const getDate = new Date(new Date().getTime() + offset);
-        const endDate = getDate.toISOString().split('T')[0];
+        const endDate = getDate.getDate();
 
+        const today = new Date();
 
         //* sql
         const conn = await pool.getConnection();
@@ -161,7 +171,7 @@ export default {
         const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `
 
         try {
-            const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, startTime]);
+            const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, reStartTime]);
 
             if (!existStudyTime.length) {
                 return res.status(400).send({
@@ -170,7 +180,7 @@ export default {
             }
 
             const studyDate = existStudyTime[0].studyDate;
-            const theTime = studyDate.toISOString().split('T')[0];
+            const theTime = studyDate.getDate();
 
             // 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
             if (getDate.getTime() - studyDate.getTime() >= 8.64e+7) {  // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
@@ -182,16 +192,16 @@ export default {
 
             // 24시 기준 분리
             if (theTime === endDate) {
-                await conn.query(updateTime, [getDate, snsId, studyDate]);
+                await conn.query(updateTime, [today, snsId, studyDate]);
 
                 return res.status(200).send({
                     message: 'success'
                 });
             } else {
-                const endDateTime = new Date(`${theTime} 23:59:59`);
+                const endDateTime = new Date(`${studyDate.getFullYear()}-${studyDate.getMonth()}-${theTime} 23:59:59.999`);
                 await conn.query(updateTime, [endDateTime, snsId, studyDate]);
 
-                const beforeDate = new Date(`${endDate} 00:00:00`);
+                const beforeDate = new Date(`${getDate.getFullYear()}-${getDate.getMonth()}-${endDate} 00:00:00.000`);
                 await conn.query(insertTime, [snsId, beforeDate, getDate]);
 
                 return res.status(200).send({
