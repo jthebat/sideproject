@@ -119,23 +119,25 @@ export default {
     startTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
 
-        // 한국시간
-        // const offset = 1000 * 60 * 60 * 9;
-        // const koreaNow = new Date(new Date().getTime() + offset);
-        const today = new Date()  //* DB에 서울시간으로 들어가는지 CHECK
-        console.log(today)
+        //* CHECK: front에서도 response 값이 한국시간으로 나오는지 확인
+        //* 한국시간 - response 용
+        const offset = 1000 * 60 * 60 * 9;
+        const koreaNow = new Date(new Date().getTime() + offset);
+
+        //* DB용
+        const today = new Date()
 
         const conn = await pool.getConnection();
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
 
         try {
-            const [inserTime] = await conn.query(insertTime, [snsId, today]);
+            await conn.query(insertTime, [snsId, today]);
 
-            console.log(inserTime)
 
             res.status(200).send({
                 message: 'success',
-                startTime: today
+                startTime: koreaNow,
+                today
             });
 
         } catch (err) {
