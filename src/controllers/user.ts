@@ -159,16 +159,32 @@ const darkMode = async (req: Request, res: Response) => {
     }
 };
 
-// 캐릭터 저장
+// 캐릭터정보 저장
 const character = async (req: Request, res: Response) => {
-    const { snsId } = res.locals.user.info;
-    const { charImg } = req.body;
-    const query = `INSERT INTO userCharacters (charImg, snsId) VALUES (?,?)`;
+    const { type, charImg } = req.body;
+    const query = `INSERT INTO CHARACTERSINFO (type, characterImg) VALUES (?,?)`;
 
     const conn = await pool.getConnection();
 
     try {
-        await conn.query(query, [charImg, snsId]);
+        await conn.query(query, [type, charImg]);
+        res.status(200).send({ message: 'success' });
+    } catch (err) {
+        res.send(err);
+    } finally {
+        conn.release();
+    }
+};
+
+//* TODO: 백엔드에서 직접 업데이트를 해줘야 하는건가? 시간이 들어오면 유저의 전체 시간 체크해서 매치..? 고려해보기
+//* 획득한 캐릭터 저장 (미완)
+const userCharater = async (req: Request, res: Response) => {
+    const { snsId } = res.locals.user.info;
+    const { } = req.body;
+
+    const conn = await pool.getConnection();
+
+    try {
         res.status(200).send({ message: 'success' });
     } catch (err) {
         res.send(err);
@@ -181,7 +197,7 @@ const character = async (req: Request, res: Response) => {
 const existCharacter = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
 
-    const existCharacter = `SELECT charImg FROM CHARACTERS WHERE snsId=?`;
+    const existCharacter = `SELECT type, characterImg FROM CHARACTERS as C JOIN CHARATERSINFO as CI ON C.charactersId = CI.id WHERE snsId=?`;
 
     const conn = await pool.getConnection();
 
@@ -238,4 +254,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, nicknameCheck, existCharacter };
+export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter };
