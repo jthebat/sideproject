@@ -23,10 +23,13 @@ userRouter.put('/nickname', authMiddleware, userController.signup);
 // 스크린모드 변경 default or dark
 userRouter.put('/onDark', authMiddleware, userController.darkMode);
 
-// 캐릭터 저장
+// 캐릭터정보 저장
 userRouter.post('/character', authMiddleware, userController.character);
 
-// 보유캐릭터 가오기
+// 획득한 캐릭터 저장
+userRouter.post('/usercharacters', authMiddleware, userController.userCharater);
+
+// 보유캐릭터 정보 가져오기       //* output: [{type: 기능써보기, 시간, 도전 등 , characterImg: "https://~~~"}]
 userRouter.get('/getcharacter', authMiddleware, userController.existCharacter);
 
 // 닉네임 중복체크

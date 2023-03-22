@@ -120,19 +120,21 @@ export default {
         const { snsId } = res.locals.user.info;
 
         // 한국시간
-        const offset = 1000 * 60 * 60 * 9;
-        const koreaNow = new Date(new Date().getTime() + offset);
+        // const offset = 1000 * 60 * 60 * 9;
+        // const koreaNow = new Date(new Date().getTime() + offset);
+        const today = new Date()  //* DB에 서울시간으로 들어가는지 CHECK
 
         const conn = await pool.getConnection();
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
 
         try {
-            await conn.query(insertTime, [snsId, koreaNow]);
+            await conn.query(insertTime, [snsId, today]);
 
             res.status(200).send({
                 message: 'success',
-                startTime: koreaNow
+                startTime: today
             });
+
         } catch (err) {
             res.send(err);
         } finally {
@@ -143,17 +145,19 @@ export default {
     // timer 끝
     endTime: async (req: Request, res: Response) => {
         const { snsId } = res.locals.user.info;
-        const { startTime, split, studyTime } = req.body;
+        const { startTime } = req.body;
 
-        // 한국시간
+        //*  한국시간
         const offset = 1000 * 60 * 60 * 9;
         const getDate = new Date(new Date().getTime() + offset);
         const endDate = getDate.toISOString().split('T')[0];
 
+
+        //* sql
         const conn = await pool.getConnection();
         const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
-        const updateTime = `UPDATE STUDYTIME SET studyTime =?, endTime =? WHERE snsId=? AND studyDate=?`;
-        const insertTime = `INSERT INTO STUDYTIME (snsId ,studyDate, studyTime, endTime) VALUES (?,?,?,?)`;
+        const updateTime = `UPDATE STUDYTIME SET endTime =? WHERE snsId=? AND studyDate=?`;
+        const insertTime = `INSERT INTO STUDYTIME (snsId ,studyDate, endTime) VALUES (?,?,?)`;
         const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `
 
         try {
@@ -177,20 +181,18 @@ export default {
             }
 
             // 24시 기준 분리
-            if (!split) {
-                if (theTime === endDate) {
-                    await conn.query(updateTime, [studyTime, getDate, snsId, studyDate]);
+            if (theTime === endDate) {
+                await conn.query(updateTime, [getDate, snsId, studyDate]);
 
-                    return res.status(200).send({
-                        message: 'success'
-                    });
-                }
+                return res.status(200).send({
+                    message: 'success'
+                });
             } else {
                 const endDateTime = new Date(`${theTime} 23:59:59`);
-                await conn.query(updateTime, [studyTime, endDateTime, snsId, studyDate]);
+                await conn.query(updateTime, [endDateTime, snsId, studyDate]);
 
                 const beforeDate = new Date(`${endDate} 00:00:00`);
-                await conn.query(insertTime, [snsId, beforeDate, studyTime, getDate]);
+                await conn.query(insertTime, [snsId, beforeDate, getDate]);
 
                 return res.status(200).send({
                     message: 'success'
