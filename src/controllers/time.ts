@@ -162,7 +162,8 @@ export default {
         const today = new Date();
         const getDate = new Date();
         const endDate = getDate.getDate();
-        console.log('getDate', getDate, 'endDate', endDate);
+        const date1 = getDate.toDateString();
+        console.log('getDate', getDate, 'endDate', endDate, 'toDateString', date1);
 
         //* sql
         const conn = await pool.getConnection();
@@ -180,12 +181,10 @@ export default {
                 });
             }
 
-            //*  한국시간
-            const offset = 1000 * 60 * 60 * 9;
-            const studyDate = new Date(existStudyTime[0].studyDate.getTime() + offset);
-
+            const studyDate = existStudyTime[0].studyDate;
             const theTime = studyDate.getDate();
-            console.log('studyDate', studyDate, 'theTime', theTime);
+            const date2 = studyDate.toDateString();
+            console.log('studyDate', studyDate, 'theTime', theTime, 'toDateString', date2);
 
             //  const test = new Date(startTime);
             //  const time = (getDate.getTime() - test.getTime()) / 1000;
