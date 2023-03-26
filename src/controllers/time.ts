@@ -133,13 +133,11 @@ export default {
         try {
             await conn.query(insertTime, [snsId, today]);
 
-
             res.status(200).send({
                 message: 'success',
                 startTime: koreaNow,
                 today
             });
-
         } catch (err) {
             res.send(err);
         } finally {
@@ -152,14 +150,15 @@ export default {
         const { snsId } = res.locals.user.info;
         const { startTime } = req.body;
 
-        let timeArr = startTime.split("");
+        let timeArr = startTime.split('');
         timeArr.pop();
-        const reStartTime = timeArr.join("");
+        const reStartTime = timeArr.join('');
 
         //*  한국시간
         const offset = 1000 * 60 * 60 * 9;
         const getDate = new Date(new Date().getTime() + offset);
         const endDate = getDate.getDate();
+        console.log('getDate', getDate, 'endDate', endDate);
 
         const today = new Date();
 
@@ -168,7 +167,7 @@ export default {
         const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
         const updateTime = `UPDATE STUDYTIME SET endTime =? WHERE snsId=? AND studyDate=?`;
         const insertTime = `INSERT INTO STUDYTIME (snsId ,studyDate, endTime) VALUES (?,?,?)`;
-        const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `
+        const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `;
 
         try {
             const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, reStartTime]);
@@ -181,9 +180,15 @@ export default {
 
             const studyDate = existStudyTime[0].studyDate;
             const theTime = studyDate.getDate();
+            console.log('studyDate', studyDate, 'theTime', theTime);
+
+            //  const test = new Date(startTime);
+            //  const time = (getDate.getTime() - test.getTime()) / 1000;
+            //  console.log('tttt', getDate, getDate.getTime(), test, test.getTime(), time);
 
             // 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
-            if (getDate.getTime() - studyDate.getTime() >= 8.64e+7) {  // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
+            if (getDate.getTime() - studyDate.getTime() >= 8.64e7) {
+                // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
                 await conn.query(deleteTime, [snsId, studyDate]);
                 return res.status(200).send({
                     message: 'Data delete success!'
@@ -207,7 +212,7 @@ export default {
                 return res.status(200).send({
                     message: 'success'
                 });
-            };
+            }
         } catch (err) {
             res.send(err);
         } finally {
@@ -296,5 +301,5 @@ export default {
         } finally {
             conn.release();
         }
-    },
+    }
 };
