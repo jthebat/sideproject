@@ -155,12 +155,14 @@ export default {
         const reStartTime = timeArr.join('');
 
         //*  한국시간
-        const offset = 1000 * 60 * 60 * 9;
-        const getDate = new Date(new Date().getTime() + offset);
+        // const offset = 1000 * 60 * 60 * 9;
+        // const getDate = new Date(new Date().getTime() + offset);
+        // const endDate = getDate.getDate();
+        // console.log('getDate', getDate, 'endDate', endDate);
+        const today = new Date();
+        const getDate = new Date();
         const endDate = getDate.getDate();
         console.log('getDate', getDate, 'endDate', endDate);
-
-        const today = new Date();
 
         //* sql
         const conn = await pool.getConnection();
@@ -178,7 +180,10 @@ export default {
                 });
             }
 
-            const studyDate = existStudyTime[0].studyDate;
+            //*  한국시간
+            const offset = 1000 * 60 * 60 * 9;
+            const studyDate = new Date(existStudyTime[0].studyDate.getTime() + offset);
+
             const theTime = studyDate.getDate();
             console.log('studyDate', studyDate, 'theTime', theTime);
 
