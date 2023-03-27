@@ -201,7 +201,7 @@ export default {
                 studyTime = (endDateTime.getTime() - new Date(studyDate).getTime()) / 1000;
                 await conn.query(updateTime, [endDateTime, studyTime, snsId, studyDate]);
 
-                const nextDate = new Date(`${endDate.getFullYear()}-${endDate.getMonth() + 1}-${endDate} 00:00:00.000`);
+                const nextDate = new Date(`${endDate.getFullYear()}-${endDate.getMonth() + 1}-${endDay} 00:00:00.000`);
                 studyTime = (new Date(endDate).getTime() - nextDate.getTime()) / 1000;
                 await conn.query(insertTime, [snsId, nextDate, endDate, studyTime]);
 
@@ -258,7 +258,7 @@ export default {
         let daylist = getDaysArray(new Date(String(firstDay)), new Date(String(lastDay)));
 
         try {
-            const [rows]: [access[], FieldPacket[]] = await conn.query(query, [snsId, firstDay, lastDay]);
+            const [rows]: [access[], FieldPacket[]] = await conn.query(query, [snsId, firstDay + 'T00:00:00.000Z', lastDay + 'T23:59:59.999Z']);
 
             let max = Math.max.apply(
                 Math,
@@ -272,10 +272,10 @@ export default {
             let p = 0;
             let result = [];
 
-            for (let m = 0; m < daylist.length - 1; m++) {
-                if (daylist[m] == String(rows[p].studyDate)) {
+            for (let m = 0; m < daylist.length; m++) {
+                if (daylist[m] === String(rows[p].studyDate)) {
                     result.push(rows[p]);
-                    p++;
+                    if (rows.length - 1 > p) p++;
                 } else {
                     result.push({ studyDate: daylist[m], total: '0' });
                 }
