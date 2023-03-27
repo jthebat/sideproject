@@ -50,7 +50,8 @@ export default {
                 let dday = new Date(item.dday).getTime();
                 let gap = dday - today.getTime();
                 let result = Math.ceil(gap / (1000 * 60 * 60 * 24));
-                return { exam: item.exam, dday: result, eday: item.dday };
+
+                return { exam: item.exam, dday: result, eday: new Date(item.dday.getTime() + 1000 * 60 * 60 * 9) };
             });
             let followingExam = result.filter((item) => {
                 return item.dday >= 0;
