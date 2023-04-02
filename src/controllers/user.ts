@@ -9,6 +9,13 @@ interface access extends RowDataPacket {
     nickname: string;
     darkMode: boolean;
 }
+interface characteraccess extends RowDataPacket {
+    codeNum: number;
+    imageURL: string;
+    missionType: string;
+    requirement: string;
+    tip: string;
+}
 
 //카카오 콜백
 const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
@@ -180,7 +187,7 @@ const character = async (req: Request, res: Response) => {
 //* 획득한 캐릭터 저장 (미완)
 const userCharater = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
-    const { } = req.body;
+    const {} = req.body;
 
     const conn = await pool.getConnection();
 
@@ -193,6 +200,36 @@ const userCharater = async (req: Request, res: Response) => {
     }
 };
 
+// 보유캐릭터 확인
+const existCharacter = async (req: Request, res: Response) => {
+    const { snsId } = res.locals.user.info;
+
+    const existCharacter = `SELECT C.codeNum, C.imageURL, C.missionType, C.requirement, C.tip, W.snsId AS T FROM ANIMALSINFO AS C LEFT JOIN (SELECT * FROM USERSANIMALS WHERE snsId=?)AS W ON C.codeNum = W.codeNum`;
+
+    const conn = await pool.getConnection();
+
+    try {
+        const [rows]: [characteraccess[], FieldPacket[]] = await conn.query(existCharacter, [snsId]);
+
+        const data = rows.map((obj) => ({
+            codeNum: obj.codeNum,
+            imageURL: obj.T ? obj.imageURL.split(' ')[0] : obj.imageURL.split(' ')[1],
+            missionType: obj.missionType,
+            requirement: obj.requirement,
+            tip: obj.tip
+        }));
+
+        return res.status(200).send({
+            message: 'success',
+            characterdata: data
+        });
+    } catch (err) {
+        res.send(err);
+    } finally {
+        conn.release();
+    }
+};
+/*
 // 보유캐릭터 확인
 const existCharacter = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
@@ -214,7 +251,7 @@ const existCharacter = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-
+*/
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;
