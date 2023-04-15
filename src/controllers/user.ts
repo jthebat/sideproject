@@ -219,9 +219,15 @@ const existCharacter = async (req: Request, res: Response) => {
             tip: obj.tip
         }));
 
+        const A = data.filter((obj) => obj.missionType === 'A');
+        const B = data.filter((obj) => obj.missionType === 'B');
+        const C = data.filter((obj) => obj.missionType === 'C');
+
         return res.status(200).send({
             message: 'success',
-            characterdata: data
+            missionTypeA: A,
+            missionTypeB: B,
+            missionTypeC: C
         });
     } catch (err) {
         res.send(err);
