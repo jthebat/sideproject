@@ -62,7 +62,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                     .cookie('screenMode', 0)
                     .cookie('refreshToken', refreshToken)
                     .cookie('accessToken', accessToken)
-                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=0`);
             } else {
                 await conn.query(updateQuery, [refreshToken, info.snsId]);
                 const [rows]: [access[], FieldPacket[]] = await conn.query(`SELECT darkMode FROM USERS WHERE snsId = ?`, [info.snsId]);
@@ -72,7 +72,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                     .cookie('screenMode', rows[0].darkMode)
                     .cookie('refreshToken', refreshToken)
                     .cookie('accessToken', accessToken)
-                    .redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+                    .redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${rows[0].darkMode}`);
             }
         } catch (err) {
             res.send(err);
