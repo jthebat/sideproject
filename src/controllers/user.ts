@@ -115,7 +115,6 @@ const userInfo = async (req: Request, res: Response) => {
         }
 
         const [userinfo]: [access[], FieldPacket[]] = await conn.query(findNickname, [user.info.snsId]);
-        console.log(userinfo);
 
         return res.json({
             message: 'success',
