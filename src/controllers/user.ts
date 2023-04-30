@@ -106,7 +106,7 @@ const ADCheck = async (req: Request, res: Response) => {
 // 로그인한 유저에 대한 정보 가져오기
 const userInfo = async (req: Request, res: Response) => {
     const { user } = res.locals;
-    const findNickname = `SELECT nickname FROM USERS WHERE snsId=?`;
+    const findNickname = `SELECT nickname, darkMode FROM USERS WHERE snsId=?`;
     const conn = await pool.getConnection();
 
     try {
@@ -115,11 +115,13 @@ const userInfo = async (req: Request, res: Response) => {
         }
 
         const [userinfo]: [access[], FieldPacket[]] = await conn.query(findNickname, [user.info.snsId]);
+        console.log(userinfo);
 
         return res.json({
             message: 'success',
             snsId: user.info.snsId,
-            nicknmae: userinfo[0].nickname
+            nickname: userinfo[0].nickname,
+            screenMode: userinfo[0].darkMode
         });
     } catch (err) {
         res.send(err);
