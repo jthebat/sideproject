@@ -35,6 +35,9 @@ userRouter.get('/getcharacter', authMiddleware, userController.existCharacter);
 // 닉네임 중복체크
 userRouter.get('/checknickname', userController.nicknameCheck);
 
+//유저프로필캐릭터
+userRouter.get('/getmaincharacter', authMiddleware, userController.userProfileCharacter);
+
 // 탈퇴
 // userRouter.delete('/signout', authMiddleware, userController.signOut);
 

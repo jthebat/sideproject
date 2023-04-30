@@ -11,9 +11,11 @@ interface access extends RowDataPacket {
 }
 interface characteraccess extends RowDataPacket {
     codeNum: number;
-    imageURL: string;
+    characterImg: string;
+    silhouette: string;
     missionType: string;
     requirement: string;
+    progress: string;
     tip: string;
 }
 
@@ -199,12 +201,37 @@ const userCharater = async (req: Request, res: Response) => {
         conn.release();
     }
 };
+//유저프로필캐릭터가져오기
+const userProfileCharacter = async (req: Request, res: Response) => {
+    const { user } = res.locals;
+    const findCode = `SELECT characterCode FROM USERS WHERE snsId = ?`;
+    const userCharater = `select characterImg, requirement, codeNum FROM CHARACTERSINFO where codeNum = ?`;
+    const conn = await pool.getConnection();
+
+    try {
+        if (!user) {
+            return res.status(400).json({ result: false, message: '존재하지 않음' });
+        }
+
+        const [code]: [access[], FieldPacket[]] = await conn.query(findCode, [user.info.snsId]);
+        const [character]: [access[], FieldPacket[]] = await conn.query(userCharater, [code[0].characterCode]);
+
+        return res.json({
+            message: 'success',
+            character
+        });
+    } catch (err) {
+        res.send(err);
+    } finally {
+        conn.release();
+    }
+};
 
 // 보유캐릭터 확인
 const existCharacter = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
 
-    const existCharacter = `SELECT C.codeNum, C.imageURL, C.missionType, C.requirement, C.tip, W.snsId AS T FROM ANIMALSINFO AS C LEFT JOIN (SELECT * FROM USERSANIMALS WHERE snsId=?)AS W ON C.codeNum = W.codeNum`;
+    const existCharacter = `SELECT C.codeNum, C.characterImg, C.silhouette, C.missionType, C.requirement, C.progress , C.tip, W.snsId AS T FROM CHARACTERSINFO AS C LEFT JOIN (SELECT * FROM USERCHARACTERS WHERE snsId=?)AS W ON C.codeNum = W.codeNum`;
 
     const conn = await pool.getConnection();
 
@@ -213,21 +240,32 @@ const existCharacter = async (req: Request, res: Response) => {
 
         const data = rows.map((obj) => ({
             codeNum: obj.codeNum,
-            imageURL: obj.T ? obj.imageURL.split(' ')[0] : obj.imageURL.split(' ')[1],
+            imageURL: obj.T ? obj.characterImg : obj.silhouette,
             missionType: obj.missionType,
             requirement: obj.requirement,
-            tip: obj.tip
+            progress: obj.progress,
+            tip: obj.tip,
+            collected: obj.T ? 1 : 0
         }));
 
         const A = data.filter((obj) => obj.missionType === 'A');
+        const collectedA = A.filter((obj) => obj.collected === 1);
+        const countA = collectedA.length;
         const B = data.filter((obj) => obj.missionType === 'B');
+        const collectedB = B.filter((obj) => obj.collected === 1);
+        const countB = collectedB.length;
         const C = data.filter((obj) => obj.missionType === 'C');
+        const collectedC = C.filter((obj) => obj.collected === 1);
+        const countC = collectedC.length;
 
         return res.status(200).send({
             message: 'success',
             missionTypeA: A,
+            collectedA: countA,
             missionTypeB: B,
-            missionTypeC: C
+            collectedB: countB,
+            missionTypeC: C,
+            collectedC: countC
         });
     } catch (err) {
         res.send(err);
@@ -297,4 +335,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter };
+export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter, userProfileCharacter };
