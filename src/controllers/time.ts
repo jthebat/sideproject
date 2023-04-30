@@ -226,12 +226,12 @@ export default {
 
         try {
             const [existData]: [access[], FieldPacket[]] = await conn.query(getData, [snsId, theDay]);
-            const result = existData.map((x) => ({
+            const data = existData.map((x) => ({
                 startTime: x.studyDate.toLocaleTimeString('ko-KR').slice(0, -3),
                 studyTime: x.studyTime,
                 endTime: x.endTime.toLocaleTimeString('ko-KR').slice(0, -3)
             }));
-            const data = result.map((obj) => obj.studyTime !== 0);
+            // const data = result.map((obj) => obj.studyTime !== 0);
 
             res.status(200).send(data);
         } catch (err) {
