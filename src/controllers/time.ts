@@ -158,13 +158,21 @@ export default {
 
         //* sql
         const conn = await pool.getConnection();
+        const missionCheck = `SELECT * FROM USERCHARACTERS WHERE snsId=? AND codeNum=1`;
+        const insertSetOn = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`;
         const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
         const updateTime = `UPDATE STUDYTIME SET endTime =?, studyTime =? WHERE snsId=? AND studyDate=?`;
         const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate, endTime, studyTime) VALUES (?,?,?,?)`;
         const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `;
 
         try {
+            const [flag]: [access[], FieldPacket[]] = await conn.query(missionCheck, [snsId]);
             const [existStudyTime]: [access[], FieldPacket[]] = await conn.query(findStudyTime, [snsId, startPoint]);
+
+            if (!flag.length) {
+                //console.log('첫 타이머 조작');
+                await conn.query(insertSetOn, [snsId, 1]);
+            }
 
             if (!existStudyTime.length) {
                 return res.status(400).send({
