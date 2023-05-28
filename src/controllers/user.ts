@@ -227,6 +227,26 @@ const userProfileCharacter = async (req: Request, res: Response) => {
         conn.release();
     }
 };
+//대표 프로필 변경
+const chgMainCharacter = async (req: Request, res: Response) => {
+    const { snsId } = res.locals.user.info;
+    const { codeNum } = req.body;
+    //const findCode = `SELECT characterCode FROM USERS WHERE snsId = ?`;
+    const query = `UPDATE USERS SET characterCode = ? WHERE USERS.snsId=?`;
+    //const userCharater = `select characterImg, requirement, codeNum FROM CHARACTERSINFO where codeNum = ?`;
+
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.query(query, [codeNum, snsId]);
+        res.status(201).json({ message: 'success' });
+    } catch (err) {
+        // console.log(err);
+        res.send(err);
+    } finally {
+        conn.release();
+    }
+};
 
 // 보유캐릭터 확인
 const existCharacter = async (req: Request, res: Response) => {
@@ -336,4 +356,4 @@ const signOut = async (req: Request, res: Response) => {
 };
 */
 
-export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter, userProfileCharacter };
+export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter, userProfileCharacter, chgMainCharacter };

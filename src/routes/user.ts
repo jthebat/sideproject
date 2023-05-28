@@ -38,6 +38,9 @@ userRouter.get('/checknickname', userController.nicknameCheck);
 //유저프로필캐릭터
 userRouter.get('/getmaincharacter', authMiddleware, userController.userProfileCharacter);
 
+// 대표캐릭터 변경하기
+userRouter.put('/changemaincharacter', authMiddleware, userController.chgMainCharacter);
+
 // 탈퇴
 // userRouter.delete('/signout', authMiddleware, userController.signOut);
 
