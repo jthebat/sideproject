@@ -255,7 +255,7 @@ export default {
         const { firstDay, lastDay } = req.query;
 
         const conn = await pool.getConnection();
-        const query = `select studyDate, sum(studyTime)as total from (select substring_index(studyDate,' ',1)as studyDate , studyTime from tsdatabase.STUDYTIME where snsId=? and CAST(studyDate AS DATE) between ? and ?) A group by studyDate`;
+        const query = `select studyDate, sum(studyTime)as total from (select substring_index(studyDate,' ',1)as studyDate , studyTime from STUDYTIME where snsId=? and CAST(studyDate AS DATE) between ? and ?) A group by studyDate`;
 
         let getDaysArray = function (start: any, end: any) {
             for (var arr = [], dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
