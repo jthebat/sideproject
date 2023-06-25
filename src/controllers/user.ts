@@ -190,7 +190,7 @@ const character = async (req: Request, res: Response) => {
 //* 획득한 캐릭터 저장 (미완)
 const userCharater = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
-    const {} = req.body;
+    const { } = req.body;
 
     const conn = await pool.getConnection();
 
@@ -341,19 +341,18 @@ const nicknameCheck = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-/*
-// 회원 탈퇴 (삭제할게 더 있는지 확인해야함 - 미완)
+
+// 회원 탈퇴
 const signOut = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
     const conn = await pool.getConnection();
 
-    const signOut = `DELETE FROM USERS WHERE USERS.snsId=? IN (SELECT * FROM USERSCharacters as UC WHERE UC.snsId=?)`;
+    const signOut = `DELETE FROM USERS WHERE USERS.snsId=?`;
 
     conn.query(signOut, [snsId]);
     res.status(200).send({
         message: "success"
     });
 };
-*/
 
-export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter, userProfileCharacter, chgMainCharacter };
+export default { kakaoCallback, ADCheck, userInfo, signup, darkMode, character, userCharater, nicknameCheck, existCharacter, userProfileCharacter, chgMainCharacter, signOut };
