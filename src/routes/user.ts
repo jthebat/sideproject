@@ -41,7 +41,7 @@ userRouter.get('/getmaincharacter', authMiddleware, userController.userProfileCh
 // 대표캐릭터 변경하기
 userRouter.put('/changemaincharacter', authMiddleware, userController.chgMainCharacter);
 
-// 탈퇴
-// userRouter.delete('/signout', authMiddleware, userController.signOut);
+// 회원탈퇴
+userRouter.delete('/signout', authMiddleware, userController.signOut);
 
 export { userRouter };
