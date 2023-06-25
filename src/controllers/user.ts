@@ -190,7 +190,7 @@ const character = async (req: Request, res: Response) => {
 //* 획득한 캐릭터 저장 (미완)
 const userCharater = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
-    const { } = req.body;
+    const {} = req.body;
 
     const conn = await pool.getConnection();
 
@@ -251,7 +251,7 @@ const chgMainCharacter = async (req: Request, res: Response) => {
 // 보유캐릭터 확인
 const existCharacter = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
-
+    const totalcharacters = 11; //시스템의 총 캐릭터 수
     const existCharacter = `SELECT C.codeNum, C.characterImg, C.silhouette, C.missionType, C.requirement, C.progress , C.tip, W.snsId AS T FROM CHARACTERSINFO AS C LEFT JOIN (SELECT * FROM USERCHARACTERS WHERE snsId=?)AS W ON C.codeNum = W.codeNum`;
 
     const conn = await pool.getConnection();
@@ -278,9 +278,12 @@ const existCharacter = async (req: Request, res: Response) => {
         const C = data.filter((obj) => obj.missionType === 'C');
         const collectedC = C.filter((obj) => obj.collected === 1);
         const countC = collectedC.length;
+        const totalcollected = countA + countB + countC;
 
         return res.status(200).send({
             message: 'success',
+            totalcollected,
+            totalcharacters,
             missionTypeA: A,
             collectedA: countA,
             missionTypeB: B,
@@ -351,7 +354,7 @@ const signOut = async (req: Request, res: Response) => {
 
     conn.query(signOut, [snsId]);
     res.status(200).send({
-        message: "success"
+        message: 'success'
     });
 };
 
