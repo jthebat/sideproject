@@ -6,6 +6,7 @@ import config from '../config/config';
 import { FieldPacket, RowDataPacket } from 'mysql2/promise';
 
 interface access extends RowDataPacket {
+    snsId: string;
     nickname: string;
     darkMode: boolean;
 }
@@ -52,11 +53,14 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         /**queries */
         const updateQuery = `UPDATE USERS SET refreshtoken = ? WHERE snsId = ?`;
         const insertQuery = `INSERT INTO USERS (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+        const existUserQuery = `SELECT * FROM USERS WHERE snsId=?`;
 
         const conn = await pool.getConnection();
 
         try {
-            if (!user) {
+            const [existUser]: [access[], FieldPacket[]] = await conn.query(existUserQuery, [info.snsId]);
+
+            if (existUser.length === 0) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
 
                 res.status(200)
