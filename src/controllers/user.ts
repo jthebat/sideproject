@@ -60,11 +60,17 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         try {
             const [existUser]: [access[], FieldPacket[]] = await conn.query(existUserQuery, [info.snsId]);
 
-            if (existUser.length === 0) {
+            if (!existUser.length) {
                 await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
 
                 res.status(200)
                     // .send(rows)
+                    .cookie('screenMode', 0)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=0`);
+            } else if (!existUser[0].nickname) {
+                res.status(200)
                     .cookie('screenMode', 0)
                     .cookie('refreshToken', refreshToken)
                     .cookie('accessToken', accessToken)
@@ -74,7 +80,6 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 const [rows]: [access[], FieldPacket[]] = await conn.query(`SELECT darkMode FROM USERS WHERE snsId = ?`, [info.snsId]);
 
                 res.status(200)
-                    // .send(rows)
                     .cookie('screenMode', rows[0].darkMode)
                     .cookie('refreshToken', refreshToken)
                     .cookie('accessToken', accessToken)
