@@ -257,6 +257,7 @@ export default {
         const conn = await pool.getConnection();
         const query = `select studyDate, sum(studyTime)as total from (select substring_index(studyDate,' ',1)as studyDate , studyTime from STUDYTIME where snsId=? and CAST(studyDate AS DATE) between ? and ?) A group by studyDate`;
 
+        //getDaysArray for empty days space
         let getDaysArray = function (start: any, end: any) {
             for (var arr = [], dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
                 arr.push(new Date(dt).toISOString().split('T')[0]);
@@ -269,6 +270,10 @@ export default {
         try {
             const [rows]: [access[], FieldPacket[]] = await conn.query(query, [snsId, firstDay + 'T00:00:00.000Z', lastDay + 'T23:59:59.999Z']);
 
+            let p = 0;
+            let total = 0;
+            let result: any[] = [];
+
             let max = Math.max.apply(
                 Math,
                 rows.map((o) => o.total)
@@ -278,18 +283,19 @@ export default {
                 rows.map((o) => o.total)
             );
 
-            let p = 0;
-            let result = [];
-
             for (let m = 0; m < daylist.length; m++) {
-                if (daylist[m] === String(rows[p].studyDate)) {
+                if (rows.length === 0) {
+                    result.push({ studyDate: daylist[m], total: '0' });
+                    (max = 0), (min = 0);
+                } else if (daylist[m] === String(rows[p].studyDate)) {
                     result.push(rows[p]);
-                    if (rows.length - 1 > p) p++;
+                    if (rows.length - 1 > p) {
+                        p++;
+                    }
                 } else {
                     result.push({ studyDate: daylist[m], total: '0' });
                 }
             }
-            let total = 0;
             result.map((obj) => {
                 total = total + Number(obj.total);
             });
