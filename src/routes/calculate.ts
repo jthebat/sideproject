@@ -28,4 +28,7 @@ timeRouter.get('/getRecord', authMiddleware, timeCtrl.getRecord);
 // 일별 공부시간 통계 조회
 timeRouter.get('/dayrecord', authMiddleware, timeCtrl.getDayRecord);
 
+// 테스트용 캐릭터 삭제
+timeRouter.delete('/deletecharacter', authMiddleware, timeCtrl.characterDeleteForTest);
+
 export { timeRouter };

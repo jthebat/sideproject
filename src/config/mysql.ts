@@ -12,7 +12,8 @@ const pool = mysql.createPool({
 export const connect = (fn: any) => async (...args: any) => {
     const con: any = await pool.getConnection();
     const [result] = await fn(con, ...args).catch(async (error: any) => {
-        con.release();
+        if (error) await con.rollback();
+        await con.release();
         throw error
     })
 
