@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import * as db from '../config/mysql';
 import pool from '../config/mysql';
 import { FieldPacket, RowDataPacket } from 'mysql2';
 
@@ -11,7 +12,7 @@ interface access extends RowDataPacket {
 
 export default {
     // 스터디방 개설
-    postRoom: async (req: Request, res: Response) => {
+    postRoom: async (req: Request, res: Response, next: NextFunction) => {
         const { snsId } = res.locals.user.info;
         const { title, cam, password, studyType, endDay, studyGoal, hashTag, max, description } = req.body;
 
@@ -21,22 +22,20 @@ export default {
         const roomInfo_query = `INSERT INTO ROOMINFO ( cam, host, password, studyType, startingDay, endDay, studyGoal, hashTag, max, description,  roomId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
         const existRoom = `SELECT * FROM ROOMS WHERE snsId=? AND title=?`;
 
-        const conn = await pool.getConnection();
         try {
-            await conn.beginTransaction();
-            await conn.query(room_query, [snsId, title, date]);
-            const [rows]: [access[], FieldPacket[]] = await conn.query(existRoom, [snsId, title]);
+            await db.transaction();
+            await db.connect((con: any) => con.query(room_query, [snsId, title, date]))();
+            await db.commit();
 
-            await conn.query(roomInfo_query, [cam, snsId, password, studyType, rows[0].createdAt, endDay, studyGoal, hashTag, max, description, rows[0].roomId]);
-            await conn.commit();
-            res.status(201).send({
-                message: 'success'
-            });
+            const [rows]: [access[], FieldPacket[]] = await db.connect((con: any) => con.query(existRoom, [snsId, title]))();
+
+            await db.connect((con: any) => con.query(roomInfo_query, [cam, snsId, password, studyType, rows[0].createdAt, endDay, studyGoal, hashTag, max, description, rows[0].roomId]))();
+            await db.commit();
+
+            return res.status(201).send({ message: 'success' });
         } catch (err) {
-            await conn.rollback();
-            console.log(err);
-        } finally {
-            conn.release();
+            await db.rollback();
+            next(err)
         }
 
         /*
@@ -60,12 +59,12 @@ export default {
     getRoom: async (req: Request, res: Response) => {
         const { studyType, hashTag, cam } = req.query;
         const conn = await pool.getConnection();
-
+    
         const query_in_hashTag = `SELECT ROOM.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM ROOMINFO JOIN ROOM ON ROOMINFO.roomId = ROOM.roomId WHERE studyType=? AND hashTag REGEXP ?`;
         const query_no_hashTag = `SELECT ROOM.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM ROOMINFO JOIN ROOM ON ROOMINFO.roomId = ROOM.roomId WHERE studyType=?`;
         const query_in_State_nohashTag = `SELECT ROOM.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM ROOMINFO JOIN ROOM ON ROOMINFO.roomId = ROOM.roomId WHERE studyType =? AND studyState=?`;
         const query_in_State_hashTag = `SELECT ROOM.roomId, title, max, studyState, description, createdAt, updatedAt, hashTag FROM ROOMINFO JOIN ROOM ON roomInfo.roomId = room.roomId WHERE studyType =? AND studyState=? AND hashTag REGEXP ?`;
-
+    
         // studyType = public
         if (studyType) {
             if (hashTag !== '전체') {
@@ -113,18 +112,19 @@ export default {
             };
         };
     },
-*/
+    */
     // 내 스터디룸 목록
-    myRoomList: async (req: Request, res: Response) => {
-        const { snsId } = res.locals.user.info;
-        const conn = await pool.getConnection();
+    myRoomList: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { snsId } = res.locals.user.info;
 
-        const myRoomList = `SELECT roomId, title FROM ROOMS WHERE snsId=?`;
+            const myRoomLists = `SELECT roomId, title FROM ROOMS WHERE snsId=?`;
 
-        const [roomList]: [access[], FieldPacket[]] = await conn.query(myRoomList, [snsId]);
-        res.status(200).send({
-            message: 'success',
-            roomList
-        });
+            const [roomList] = await db.connect((con: any) => con.query(myRoomLists, [snsId]))();
+
+            res.status(200).send({ roomList });
+        } catch (err) {
+            next(err);
+        };
     }
 };
