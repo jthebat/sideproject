@@ -168,6 +168,7 @@ export default {
 
             const findStudyTimeForCharacter = `SELECT sum(studyTime) AS total FROM STUDYTIME WHERE snsId = ?`
             const countStudyNum = `SELECT count(snsId) AS num FROM STUDYTIME WHERE snsId = ?`
+            const findCharacter = `SELECT characterImg, requirement FROM CHARACTERSINFO WHERE codeNum = ?`
 
             // 캐릭터 관련 로직
             let getCharacters: number[] = []
@@ -177,7 +178,9 @@ export default {
                 await db.connect((con: any) => con.query(insertSetOn, [snsId, codeNum]))();
                 await db.commit();
 
-                getCharacters.push(codeNum);
+                const [character] = await db.connect((con: any) => con.query(findCharacter, [codeNum]))();
+
+                getCharacters.push(character);
                 return;
             }
 
@@ -191,6 +194,9 @@ export default {
             // 출석 캐릭터 관련
             const [studyNum] = await db.connect((con: any) => con.query(countStudyNum, [snsId]))();
 
+            // TODO: 당일에 여러번 등록할 수 있어서 이런 방식으로 하면 안됨.
+            // 출석테이블 만들어서 관리하고 count, 누적공부시간 컬럼 넣어서 해당 로우만 볼 수 있게 만들기
+            // 연속체크도 count에서 확인하고, 전날에 데이터가 없으면 다시 1로 원상복귀
             switch (studyNum.num) {
                 case 2:
                     await InsertChracter(10);
@@ -208,12 +214,12 @@ export default {
             const total = totalStudyTime.total;
 
 
-
             // 6시간 이상 달성 시
             if (total >= 21600 && total < 43200) await InsertChracter(20);
 
             // 12시간 이상 달성 시
             else if (total >= 43200 && total < 72000) await InsertChracter(21);
+
             // 20시간 이상 달성 시
             else if (total >= 72000 && total < 108000) await InsertChracter(22);
 
@@ -358,6 +364,24 @@ export default {
             return res.status(200).send({ result, max, min, avg: total / result.length });
         } catch (err) {
             next(err);
+        }
+    },
+
+    // 테스트를 위한 캐릭터 삭제 api
+    characterDeleteForTest: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { snsId } = res.locals.user.info;
+
+            const deleteQuery = `DELETE FROM USERCHARACTERS WHERE snsId = ?`
+
+            await db.transaction();
+            await db.connect((con: any) => con.query(deleteQuery, [snsId]))();
+            await db.commit();
+
+            return res.status(200).json({ message: "success delete!" })
+        } catch (err) {
+            await db.rollback();
+            next(err)
         }
     }
 };
