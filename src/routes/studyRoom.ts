@@ -11,6 +11,6 @@ roomRouter.post("/studyroom", authMiddleware, studyRoomCtrl.postRoom);
 // roomRouter.get('/getrooms', authMiddleware, studyRoomCtrl.getRoom);
 
 // 나의 스터디방 목록 조회
-// roomRouter.get('/myroomlist', authMiddleware, studyRoomCtrl.myRoomList);
+roomRouter.get('/myroomlist', authMiddleware, studyRoomCtrl.myRoomList);
 
 export { roomRouter };

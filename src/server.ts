@@ -1,13 +1,15 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import logging from './config/logging';
-import config from './config/config';
-import helmet from 'helmet';
-import router from './routes'
-import { kakaoPassport } from './passport/kakao';
-import socketConnect from './socket';
 import http from 'http';
 import cors from 'cors';
+import helmet from 'helmet';
+
+import logging from './config/logging';
+import config from './config/config';
+import router from './routes'
+import socketConnect from './socket';
+import { kakaoPassport } from './passport/kakao';
+import { errorHandler } from './middlewares/errorHandler'
 
 const NAMESPACE = 'Server';
 const app = express();
@@ -27,7 +29,6 @@ app.use((req, res, next) => {
         /** Log the res */
         logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - STATUS: [${res.statusCode}] - IP: [${req.socket.remoteAddress}]`);
     });
-
     next();
 });
 
@@ -76,8 +77,7 @@ app.use((err: Error, req: Request, res: Response) => {
 
 socketConnect(SERVER);
 
+// 에러 핸들러
+app.use(errorHandler);
+
 SERVER.listen(config.server.port, (): void => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
-
-
-
-
