@@ -11,7 +11,15 @@ interface access extends RowDataPacket {
     endTime: Date;
     studyTime: number;
     total: number;
-}
+};
+
+function getToday(date: Date) {
+    var year = date.getFullYear();
+    var month = ("0" + (1 + date.getMonth())).slice(-2);
+    var day = ("0" + date.getDate()).slice(-2);
+
+    return year + "-" + month + "-" + day;
+};
 
 export default {
     // 시험 D-day 등록
@@ -30,7 +38,7 @@ export default {
 
             await db.transaction();
             await db.connect((con: any) => con.query(query, [snsId, exam, dday]))();
-            await db.commit();
+            await db.finalCommit();
 
             const [data] = await db.connect((con: any) => con.query(checkquery, [dday, snsId]))();
 
@@ -84,7 +92,7 @@ export default {
 
             await db.transaction();
             await db.connect((con: any) => con.query(query, [exam, dday, ddayId, snsId]))();
-            await db.commit();
+            await db.finalCommit();
 
             const [data] = await db.connect((con: any) => con.query(checkquery, [ddayId, snsId]))();
 
@@ -105,7 +113,7 @@ export default {
 
             await db.transaction();
             await db.connect((con: any) => con.query(query, [ddayId, snsId]))();
-            await db.commit();
+            await db.finalCommit();
 
             return res.status(200).send({ ddayId });
         } catch (err) {
@@ -127,15 +135,16 @@ export default {
             const existData = `SELECT * FROM STUDYTIME WHERE snsId = ? AND studyTime = ? ORDER BY studyTime DESC LIMIT 1`;
             const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
 
-            const [data] = await db.connect((con: any) => con.query(existData, [snsId, 0]))();
+            // 돌아가고 있는 타이머 찾기
+            const [timerData] = await db.connect((con: any) => con.query(existData, [snsId, 0]))();
 
             // 웬만하면 들어올 일은 없겠지만 이미 돌아가고 있는 타이머가 있는 경우 에러
-            if (!!data) return res.status(400).json({ errorMessage: "이미 작동중인 데이터가 존재합니다." })
+            if (timerData) return res.status(400).json({ errorMessage: "이미 작동중인 데이터가 존재합니다." });
 
             // 등록
             await db.transaction();
             await db.connect((con: any) => con.query(insertTime, [snsId, startTime]))();
-            await db.commit();
+            await db.finalCommit();
 
             return res.status(201).send({ startPoint: KrTime });
         } catch (err) {
@@ -149,10 +158,6 @@ export default {
         try {
             const { snsId } = res.locals.user.info;
             const { startPoint } = req.body;
-            //*  한국시간
-            // const offset = 1000 * 60 * 60 * 9;
-            // const getDate = new Date(new Date().getTime() + offset);
-            // const endDate = getDate.getDate();
 
             const endDate = new Date();
             const endDay = endDate.getDate();
@@ -160,102 +165,86 @@ export default {
             //* sql
             const conn = await pool.getConnection();
             const missionCheck = `SELECT snsId FROM USERCHARACTERS WHERE snsId=? AND codeNum=?`;
-            const insertSetOn = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`;
             const findStudyTime = `SELECT studyDate FROM STUDYTIME WHERE snsId=? AND studyDate=? AND studyTime = 0`;
             const updateTime = `UPDATE STUDYTIME SET endTime =?, studyTime =? WHERE snsId=? AND studyDate=?`;
             const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate, endTime, studyTime) VALUES (?,?,?,?)`;
-            const deleteTime = `DELETE FROM STUDYTIME WHERE STUDYTIME.snsId=? AND STUDYTIME.studyDate=? `;
+            const deleteTime = `DELETE FROM STUDYTIME WHERE snsId=? AND studyDate=? `;
 
-            const findStudyTimeForCharacter = `SELECT sum(studyTime) AS total FROM STUDYTIME WHERE snsId = ?`
-            const countStudyNum = `SELECT count(snsId) AS num FROM STUDYTIME WHERE snsId = ?`
-            const findCharacter = `SELECT characterImg, requirement FROM CHARACTERSINFO WHERE codeNum = ?`
+            const checkAttendace = `SELECT date, inARow, accTime FROM ATTENDANCE WHERE snsId = ? ORDER BY date DESC LIMIT 1`;
+            const insertAttendance = `INSERT INTO ATTENDANCE (snsId, date, inARow, accTime) VALUES (?,?,?,?)`;
+            const updateAttendance = `UPDATE ATTENDANCE SET accTime = ? WHERE snsId = ? AND date = ?`
 
-            // 캐릭터 관련 로직
-            let getCharacters: number[] = []
+            // 캐릭터 관련 배열
+            let getCharacters: object[] = []
 
             // 캐릭터 디비 업데이트 함수
             async function InsertChracter(codeNum: number) {
-                await db.connect((con: any) => con.query(insertSetOn, [snsId, codeNum]))();
-                await db.commit();
+                const insertSetOn = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`;
+                const findCharacter = `SELECT characterImg, requirement FROM CHARACTERSINFO WHERE codeNum = ?`;
 
-                const [character] = await db.connect((con: any) => con.query(findCharacter, [codeNum]))();
+                const [existChracter] = await db.connect((con: any) => con.query(missionCheck, [snsId, codeNum]))();
 
-                getCharacters.push(character);
+                // 캐릭터를 보유하고 있지 않을 때만 등록
+                if (!existChracter) {
+                    await db.connect((con: any) => con.query(insertSetOn, [snsId, codeNum]))();
+                    await db.commit();
+
+                    const [character] = await db.connect((con: any) => con.query(findCharacter, [codeNum]))();
+
+                    getCharacters.push(character);
+                }
                 return;
-            }
+            };
 
-
-            // 처음 타이머 사용할 시 
-            const [firstUsedTimer] = await db.connect((con: any) => con.query(missionCheck, [snsId, 1]))();
-
-            await db.transaction();
-            if (!firstUsedTimer) await InsertChracter(1);
-
-            // 출석 캐릭터 관련
-            const [studyNum] = await db.connect((con: any) => con.query(countStudyNum, [snsId]))();
-
-            // TODO: 당일에 여러번 등록할 수 있어서 이런 방식으로 하면 안됨.
-            // 출석테이블 만들어서 관리하고 count, 누적공부시간 컬럼 넣어서 해당 로우만 볼 수 있게 만들기
-            // 연속체크도 count에서 확인하고, 전날에 데이터가 없으면 다시 1로 원상복귀
-            switch (studyNum.num) {
-                case 2:
-                    await InsertChracter(10);
-                    break;
-                case 5:
-                    await InsertChracter(11);
-                    break;
-                case 10:
-                    await InsertChracter(12);
-                    break;
-            }
-
-            // 공부시간 캐릭터 관련
-            const [totalStudyTime] = await db.connect((con: any) => con.query(findStudyTimeForCharacter, [snsId]))();
-            const total = totalStudyTime.total;
-
-
-            // 6시간 이상 달성 시
-            if (total >= 21600 && total < 43200) await InsertChracter(20);
-
-            // 12시간 이상 달성 시
-            else if (total >= 43200 && total < 72000) await InsertChracter(21);
-
-            // 20시간 이상 달성 시
-            else if (total >= 72000 && total < 108000) await InsertChracter(22);
-
-            // 30시간 이상 달성 시
-            else if (total >= 108000 && total < 144000) await InsertChracter(23);
-
-            // 40시간 이상 달성 시
-            else if (total >= 144000 && total < 180000) await InsertChracter(24);
-
-            // 50시간 이상 달성 시
-            else if (total >= 180000) {
-                const [eixstChracter] = await db.connect((con: any) => con.query(missionCheck, [snsId, 25]))();
-
-                // 캐릭터가 없는 경우에만 등록
-                if (!eixstChracter) await InsertChracter(25);
-            }
-
-            // 여기부터는 공부시간 관련 로직
+            // 현재 타이머가 돌고있는 데이터를 찾기.
             const [existStudyTime] = await db.connect((con: any) => con.query(findStudyTime, [snsId, startPoint]))();
 
             // 시작한 타임이 없어서 에러 처리(웬만하면 이 곳에 빠지지 않도록 해야한다.)
             if (!existStudyTime) return res.status(400).send({ errorMessage: '현재 등록된 데이터가 없습니다!' });
 
+            // 공부 시작 날짜 및 시간
             const studyDate = existStudyTime.studyDate;
             const theTime = studyDate.getDate();
 
+            // 출석 관련 로직
+            // 출석 확인 - 가장 최신의 데이터를 하나 가져옴
+            const [attendance] = await db.connect((con: any) => con.query(checkAttendace, [snsId]))();
+
+            // 출석 회차 및 누적 공부시간
+            let inARow = 0;
+            let accTime: number;
+            let studyTime = (endDate.getTime() - new Date(studyDate).getTime()) / 1000;
+
+            // TODO: 만약 익일을 넘겨서 공부를 한 경우 출석은 이틀로 인정을 해줘야하는가?
+            // 출석부에 데이터가 있는 경우 출석회차와 누적공부시간을 더해줘야 한다.
+            if (attendance) {
+                accTime = attendance.accTime + studyTime;
+
+                if (getToday(new Date(attendance.date)) !== getToday(studyDate)) {
+                    inARow = attendance.inARow + 1;
+
+                    await db.connect((con: any) => con.query(insertAttendance, [snsId, studyDate, inARow, accTime]))();
+                }
+
+                else await db.connect((con: any) => con.query(updateAttendance, [accTime, snsId, attendance.date]))();
+            }
+            else {
+                // 만약 공부 시작 시간에 출석이 없으면 생성
+                inARow = 1;
+                accTime = studyTime;
+
+                await db.connect((con: any) => con.query(insertAttendance, [snsId, studyDate, inARow, accTime]))();
+            }
+
+            // 여기부터는 공부시간 관련 로직
             // 시작시간 이후 24시간 타이머 넘었는지 체크 (넘으면 해당 날짜의 데이터 삭제)
             if (endDate.getTime() - studyDate.getTime() >= 8.64e7) {
                 // 쉬는 시간 초도 받아야 정확한 타이머 시간 24시간 체크 가능
                 await conn.query(deleteTime, [snsId, studyDate]);
-                await db.commit();
+                await db.finalCommit();
 
                 return res.status(200).send({ message: 'Data delete success!' });
             }
-
-            let studyTime = (endDate.getTime() - new Date(studyDate).getTime()) / 1000;
 
             // 24시 기준 분리
             // 공부 시작 당일에 해당
@@ -279,6 +268,44 @@ export default {
                 await db.commit();
             }
 
+            // 캐릭터 관련 로직
+            // 출석 캐릭터 관련
+            // TODO: 만약 익일 넘어서도 출석이 인정되는 경우 출석캐릭터 받는 로직을 수정해야함
+            switch (inARow) {
+                case 1:  // 처음 타이머 사용할 시
+                    await InsertChracter(1);
+                    break;
+                case 2:
+                    await InsertChracter(10);
+                    break;
+                case 5:
+                    await InsertChracter(11);
+                    break;
+                case 10:
+                    await InsertChracter(12);
+                    break;
+            }
+
+            // 공부시간 캐릭터 관련
+            // 6시간 이상 달성 시
+            if (accTime >= 21600 && accTime < 43200) await InsertChracter(20);
+
+            // 12시간 이상 달성 시
+            else if (accTime >= 43200 && accTime < 72000) await InsertChracter(21);
+
+            // 20시간 이상 달성 시
+            else if (accTime >= 72000 && accTime < 108000) await InsertChracter(22);
+
+            // 30시간 이상 달성 시
+            else if (accTime >= 108000 && accTime < 144000) await InsertChracter(23);
+
+            // 40시간 이상 달성 시
+            else if (accTime >= 144000 && accTime < 180000) await InsertChracter(24);
+
+            // 50시간 이상 달성 시
+            else if (accTime >= 180000) await InsertChracter(25);
+
+            await db.release();
             return res.status(201).json({ getCharacters })
         } catch (err) {
             await db.rollback();
@@ -376,7 +403,7 @@ export default {
 
             await db.transaction();
             await db.connect((con: any) => con.query(deleteQuery, [snsId]))();
-            await db.commit();
+            await db.finalCommit();
 
             return res.status(200).json({ message: "success delete!" })
         } catch (err) {
