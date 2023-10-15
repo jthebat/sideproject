@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import pool from '../config/mysql';
+import * as db from '../config/mysql'
 import jwt from 'jsonwebtoken';
 import config from '../config/config';
 import { FieldPacket, RowDataPacket } from 'mysql2/promise';
@@ -52,43 +53,42 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         });
         /**queries */
         const updateQuery = `UPDATE USERS SET refreshtoken = ? WHERE snsId = ?`;
-        const insertQuery = `INSERT INTO USERS (snsId, email, provider, refreshtoken) VALUE (?,?,?,?)`;
+        const insertQuery = `INSERT INTO USERS (snsId, email, provider, refreshtoken) VALUES (?,?,?,?)`;
         const existUserQuery = `SELECT * FROM USERS WHERE snsId=?`;
-
-        const conn = await pool.getConnection();
+        const insertFirstLoginCharacter = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`
 
         try {
-            const [existUser]: [access[], FieldPacket[]] = await conn.query(existUserQuery, [info.snsId]);
+            const [existUser] = await db.connect((con: any) => con.query(existUserQuery, [info.snsId]))();
 
-            if (!existUser.length) {
-                await conn.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]);
+            let screenMode = false
+            let statusCode = 201
 
-                res.status(200)
-                    // .send(rows)
-                    .cookie('screenMode', 0)
-                    .cookie('refreshToken', refreshToken)
-                    .cookie('accessToken', accessToken)
-                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=0`);
-            } else if (!existUser[0].nickname) {
-                res.status(200)
-                    .cookie('screenMode', 0)
-                    .cookie('refreshToken', refreshToken)
-                    .cookie('accessToken', accessToken)
-                    .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=0`);
+            // 신규가입시
+            if (!existUser) {
+                await db.transaction();
+                await db.connect((con: any) => con.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]))();
+
+                // 첫 로그인 캐릭터 부여
+                await db.connect((con: any) => con.query(insertFirstLoginCharacter, [info.snsId, 0]))();
+                await db.finalCommit();
+
             } else {
-                await conn.query(updateQuery, [refreshToken, info.snsId]);
-                const [rows]: [access[], FieldPacket[]] = await conn.query(`SELECT darkMode FROM USERS WHERE snsId = ?`, [info.snsId]);
+                await db.transaction();
+                await db.connect((con: any) => con.query(updateQuery, [refreshToken, info.snsId]))();
+                await db.finalCommit();
 
-                res.status(200)
-                    .cookie('screenMode', rows[0].darkMode)
-                    .cookie('refreshToken', refreshToken)
-                    .cookie('accessToken', accessToken)
-                    .redirect(`http://localhost:3000/timer?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${rows[0].darkMode}`);
+                screenMode = existUser.darkMode
+                statusCode = 200
             }
+
+            return res.status(statusCode)
+                .cookie('screenMode', screenMode)
+                .cookie('refreshToken', refreshToken)
+                .cookie('accessToken', accessToken)
+                .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
         } catch (err) {
-            res.send(err);
-        } finally {
-            conn.release();
+            db.release();
+            next(err)
         }
     })(req, res, next);
 };
@@ -199,7 +199,7 @@ const character = async (req: Request, res: Response) => {
 //* 획득한 캐릭터 저장 (미완)
 const userCharater = async (req: Request, res: Response) => {
     const { snsId } = res.locals.user.info;
-    const {} = req.body;
+    const { } = req.body;
 
     const conn = await pool.getConnection();
 
