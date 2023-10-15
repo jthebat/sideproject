@@ -55,21 +55,18 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         const updateQuery = `UPDATE USERS SET refreshtoken = ? WHERE snsId = ?`;
         const insertQuery = `INSERT INTO USERS (snsId, email, provider, refreshtoken) VALUES (?,?,?,?)`;
         const existUserQuery = `SELECT * FROM USERS WHERE snsId=?`;
-        const insertFirstLoginCharacter = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`
 
         try {
             const [existUser] = await db.connect((con: any) => con.query(existUserQuery, [info.snsId]))();
 
             let screenMode = false
             let statusCode = 201
+            let page = 'signin'
 
             // 신규가입시
             if (!existUser) {
                 await db.transaction();
                 await db.connect((con: any) => con.query(insertQuery, [info.snsId, info.email, info.provider, refreshToken]))();
-
-                // 첫 로그인 캐릭터 부여
-                await db.connect((con: any) => con.query(insertFirstLoginCharacter, [info.snsId, 0]))();
                 await db.finalCommit();
 
             } else {
@@ -79,13 +76,14 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
 
                 screenMode = existUser.darkMode
                 statusCode = 200
+                page = 'timer'
             }
 
             return res.status(statusCode)
                 .cookie('screenMode', screenMode)
                 .cookie('refreshToken', refreshToken)
                 .cookie('accessToken', accessToken)
-                .redirect(`http://localhost:3000/signin?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+                .redirect(`http://localhost:3000/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
         } catch (err) {
             db.release();
             next(err)
@@ -139,22 +137,36 @@ const userInfo = async (req: Request, res: Response) => {
 };
 
 // 닉네임 변경
-const signup = async (req: Request, res: Response) => {
+const signup = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const { nickname } = req.body;
 
     // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
-    const query_2 = `UPDATE USERS SET nickname=? WHERE snsId=?`;
-
-    const conn = await pool.getConnection();
+    const findCharacter = `SELECT snsId FROM USERCHARACTERS WHERE snsId = ? AND codeNum = ?`
+    const insertFirstLoginCharacter = `INSERT INTO USERCHARACTERS (snsId, codeNum) VALUES (?,?)`
+    const updateNickname = `UPDATE USERS SET nickname=? WHERE snsId=?`;
+    const findFirstLoginCharacterInfo = `SELECT characterImg, requirement FROM CHARACTERSINFO WHERE codeNum = ?`
 
     try {
-        await conn.query(query_2, [nickname, snsId]);
-        res.status(200).send({ message: 'success' });
+        let characterInfo = { message: 'success!' }
+        const [existCharacter] = await db.connect((con: any) => con.query(findCharacter, [snsId, 0]))();
+
+        await db.transaction();
+
+        if (!existCharacter) {
+            // 첫 로그인 캐릭터 부여
+            await db.connect((con: any) => con.query(insertFirstLoginCharacter, [snsId, 0]))();
+
+            [characterInfo] = await db.connect((con: any) => con.query(findFirstLoginCharacterInfo, [0]))();
+        }
+
+        await db.connect((con: any) => con.query(updateNickname, [nickname, snsId]))();
+        await db.finalCommit();
+
+        return res.status(201).send(characterInfo);
     } catch (err) {
-        res.send(err);
-    } finally {
-        conn.release();
+        await db.release();
+        next(err);
     }
 };
 
