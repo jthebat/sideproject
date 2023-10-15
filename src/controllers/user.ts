@@ -148,7 +148,7 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
     const findFirstLoginCharacterInfo = `SELECT characterImg, requirement FROM CHARACTERSINFO WHERE codeNum = ?`
 
     try {
-        let characterInfo = { message: 'success!' }
+        let data = { message: 'success!' }
         const [existCharacter] = await db.connect((con: any) => con.query(findCharacter, [snsId, 0]))();
 
         await db.transaction();
@@ -156,14 +156,15 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
         if (!existCharacter) {
             // 첫 로그인 캐릭터 부여
             await db.connect((con: any) => con.query(insertFirstLoginCharacter, [snsId, 0]))();
+            await db.commit();
 
-            [characterInfo] = await db.connect((con: any) => con.query(findFirstLoginCharacterInfo, [0]))();
+            [data] = await db.connect((con: any) => con.query(findFirstLoginCharacterInfo, [0]))();
         }
 
         await db.connect((con: any) => con.query(updateNickname, [nickname, snsId]))();
         await db.finalCommit();
 
-        return res.status(201).send(characterInfo);
+        return res.status(201).send(data);
     } catch (err) {
         await db.release();
         next(err);
