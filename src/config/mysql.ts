@@ -6,7 +6,7 @@ const pool = mysql.createPool({
     password: config.mysql.pass,
     host: config.mysql.host,
     database: config.mysql.database,
-    connectionLimit: 10
+    connectionLimit: 20
 });
 
 export const connect = (fn: any) => async (...args: any) => {
@@ -23,17 +23,30 @@ export const connect = (fn: any) => async (...args: any) => {
 
 export const transaction = async () => {
     const con: any = await pool.getConnection();
-    return await con.beginTransaction();
+    await con.beginTransaction();
 }
 
 export const rollback = async () => {
     const con: any = await pool.getConnection();
-    return await con.rollback();
+    await con.rollback();
+    await con.release();
+    return
 }
 
 export const commit = async () => {
     const con: any = await pool.getConnection();
-    return await con.commit();
+    await con.commit();
+}
+
+export const finalCommit = async () => {
+    const con: any = await pool.getConnection();
+    await con.commit();
+    await con.release();
+}
+
+export const release = async () => {
+    const con: any = await pool.getConnection();
+    await con.release();
 }
 
 export default pool
