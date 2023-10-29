@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import { FieldPacket, RowDataPacket } from 'mysql2';
-import { nextTick } from 'process';
 import * as db from '../config/mysql'
 import pool from '../config/mysql';
 
@@ -125,7 +124,35 @@ export default {
             next(err);
         }
     },
+    // 돌아가고 있는 타이머가 존재하는지 조회하는 GET API
+    getStudyTime: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { snsId } = res.locals.user.info;
 
+            const checkTimer = `SELECT studyDate FROM STUDYTIME WHERE snsId = ? AND studyTime = ? ORDER BY studyTime DESC LIMIT 1`;
+            const deleteTimer = `DELETE FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
+
+            // 돌아가고 있는 타이머 찾기
+            const [timerData] = await connect(checkTimer, [snsId, 0]);
+            const nowTime = new Date().getTime()
+
+            if (timerData) {
+                const startTime = timerData.studyDate.getTime()
+                //* 타이머가 시작되고 24시간이 지났다면 DB에서 삭제
+                if (nowTime - startTime >= 8.64e7) {
+                    await db.transaction();
+                    await connect(deleteTimer, [snsId, timerData.studyDate]);
+                    await db.commit();
+                }
+                else return res.status(200).json({ studyDate: timerData.studyDate });
+            }
+
+            return res.status(200).json();
+        } catch (err) {
+            await db.rollback();
+            next(err);
+        }
+    },
     // timer 시작
     startTime: async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -461,3 +488,7 @@ export default {
         }
     }
 };
+function next(err: unknown) {
+    throw new Error('Function not implemented.');
+}
+

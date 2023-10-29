@@ -16,6 +16,9 @@ timeRouter.delete('/removeDay', authMiddleware, timeCtrl.removeDay);
 // D-day 수정
 timeRouter.put('/modifyDay', authMiddleware, timeCtrl.modifyDay);
 
+// 동작하고 있는 timer가 있는지 확인하는 GET API
+timeRouter.get('/timer', authMiddleware, timeCtrl.getStudyTime);
+
 // timer 시작
 timeRouter.post('/startTime', authMiddleware, timeCtrl.startTime);
 
