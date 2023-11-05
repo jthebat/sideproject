@@ -136,6 +136,8 @@ export default {
             const [timerData] = await connect(checkTimer, [snsId, 0]);
             const nowTime = new Date().getTime()
 
+            console.log({ timerData, now: new Date() })
+
             if (timerData) {
                 const startTime = timerData.studyDate.getTime()
                 //* 타이머가 시작되고 24시간이 지났다면 DB에서 삭제
@@ -162,6 +164,8 @@ export default {
             const offset = 1000 * 60 * 60 * 9;
             const startTime = new Date();
             const KrTime = new Date(startTime.getTime() + offset); // 3번째 소숫점 오차 기존에 있었는데 계속 확인해볼것
+
+            console.log({ startTime })
 
             const existData = `SELECT * FROM STUDYTIME WHERE snsId = ? AND studyTime = ? ORDER BY studyTime DESC LIMIT 1`;
             const insertTime = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`;
