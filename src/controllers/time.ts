@@ -28,37 +28,6 @@ async function connect(sqlQuery: string, data: any[]) {
 }
 
 export default {
-    getStudyTime: async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const { snsId } = res.locals.user.info;
-
-            const checkTimer = `SELECT studyDate FROM STUDYTIME WHERE snsId = ? AND studyTime = ? ORDER BY studyTime DESC LIMIT 1`;
-            const deleteTimer = `DELETE FROM STUDYTIME WHERE snsId=? AND studyDate=?`;
-            const insertTimer = `INSERT INTO STUDYTIME (snsId, studyDate) VALUES (?,?)`
-
-            console.log({ date: new Date() })
-
-            // 돌아가고 있는 타이머 찾기
-            // const [timerData] = await connect(checkTimer, [snsId, 0]);
-            const [timerData] = await db.SelectQuery<access>(checkTimer, [snsId, 0]);
-
-            if (timerData) await db.ModifyQuery(deleteTimer, [snsId, timerData.studyDate]);
-
-            else {
-                const result = await db.ModifyQuery(insertTimer, [snsId, new Date()]);
-
-                console.log({ result });
-            }
-
-            console.log({ timerData });
-
-            return res.status(200).json();
-        } catch (err) {
-            await db.rollback();
-            next(err);
-        }
-    },
-
     // 시험 D-day 등록
     setDay: async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -158,7 +127,6 @@ export default {
             next(err);
         }
     },
-    /*
     // 돌아가고 있는 타이머가 존재하는지 조회하는 GET API
     getStudyTime: async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -170,8 +138,6 @@ export default {
             // 돌아가고 있는 타이머 찾기
             const [timerData] = await connect(checkTimer, [snsId, 0]);
             const nowTime = new Date().getTime()
-
-            console.log({ timerData })
 
             if (timerData) {
                 const startTime = timerData.studyDate.getTime()
@@ -190,7 +156,6 @@ export default {
             next(err);
         }
     },
-    */
     // timer 시작
     startTime: async (req: Request, res: Response, next: NextFunction) => {
         try {
