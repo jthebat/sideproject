@@ -188,7 +188,8 @@ export default {
     endTime: async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { snsId } = res.locals.user.info;
-            const { startPoint } = req.body;
+            let { startPoint } = req.body;
+            startPoint = new Date(startPoint);
 
             const endDate = new Date();
             const endDay = endDate.getDate();
@@ -219,7 +220,7 @@ export default {
                 if (codeNum >= 21 && codeNum <= 25) {
                     const studyCode = [20, 21, 22, 23, 24, 25]
                     // 가지고 있는 공부 관련 캐릭터 가져오기
-                    const studyCharacters = await connect(getStudyCharacter, snsId);
+                    const studyCharacters = await connect(getStudyCharacter, [snsId]);
 
                     const studyCharactersKeys = studyCharacters.map((el: { codeNum: any; }) => el.codeNum);
 
