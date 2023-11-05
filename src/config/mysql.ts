@@ -7,7 +7,7 @@ const pool = mysql.createPool({
     host: config.mysql.host,
     database: config.mysql.database,
     connectionLimit: 20,
-    timezone: "+09:00"
+    timezone: "+0900"
 });
 
 export const connect = (fn: any) => async (...args: any) => {
