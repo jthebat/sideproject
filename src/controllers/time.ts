@@ -14,8 +14,11 @@ interface access extends RowDataPacket {
 
 function getToday(date: Date) {
     var year = date.getFullYear();
-    var month = ("0" + (1 + date.getMonth())).slice(-2);
-    var day = ("0" + date.getDate()).slice(-2);
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+
+    String(month).length === 1 ? `0${month}` : month;
+    String(day).length === 1 ? `0${day}` : day;
 
     return year + "-" + month + "-" + day;
 };
@@ -134,19 +137,22 @@ export default {
 
             // 돌아가고 있는 타이머 찾기
             const [timerData] = await connect(checkTimer, [snsId, 0]);
-            const nowTime = new Date().getTime()
 
-            console.log({ timerData })
+            //*  한국시간
+            const offset = 1000 * 60 * 60 * 9;
+            const nowTime = new Date().getTime() + offset
 
             if (timerData) {
-                const startTime = timerData.studyDate.getTime()
+                const KrTime = new Date(timerData.studyDate.getTime() + offset)
+                const startTime = timerData.studyDate.getTime() + offset
+
                 //* 타이머가 시작되고 24시간이 지났다면 DB에서 삭제
                 if (nowTime - startTime >= 8.64e7) {
                     await db.transaction();
-                    await connect(deleteTimer, [snsId, timerData.studyDate]);
+                    await connect(deleteTimer, [snsId, KrTime]);
                     await db.commit();
                 }
-                else return res.status(200).json({ studyDate: timerData.studyDate });
+                else return res.status(200).json({ studyDate: KrTime });
             }
 
             return res.status(200).json();
@@ -492,6 +498,7 @@ export default {
         }
     }
 };
+
 function next(err: unknown) {
     throw new Error('Function not implemented.');
 }
