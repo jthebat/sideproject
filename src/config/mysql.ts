@@ -1,4 +1,5 @@
 import mysql from "mysql2/promise";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 import config from "./config";
 
 const pool = mysql.createPool({
@@ -6,19 +7,38 @@ const pool = mysql.createPool({
     password: config.mysql.pass,
     host: config.mysql.host,
     database: config.mysql.database,
+    waitForConnections: true,
     connectionLimit: 20,
-    timezone: "+00:00" // msyql 설정이 Asia/Seoul 로 되어있어서 +00:00로 설정
+    timezone: "+09:00"
 });
 
+// select
+export async function SelectQuery<T>(queryString: string, arg: string[]): Promise<Partial<T>[]> {
+    const [result] = await pool.execute(queryString, arg);
+    return result as T[];
+}
+
+// insert/update/delete
+export async function ModifyQuery(queryString: string, arg: string[]): Promise<ResultSetHeader> {
+    const con = await pool.getConnection();
+    await con.beginTransaction();
+    const [result] = await con.query(queryString, arg);
+    await con.commit();
+
+    con.release();
+    return result as ResultSetHeader;
+}
+
+
 export const connect = (fn: any) => async (...args: any) => {
-    const con: any = await pool.getConnection();
+    const con = await pool.getConnection();
     const [result] = await fn(con, ...args).catch(async (error: any) => {
         if (error) await con.rollback();
-        await con.release();
+        con.release();
         throw error
     })
 
-    await con.release();
+    con.release();
     return result
 };
 
