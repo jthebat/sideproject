@@ -136,7 +136,7 @@ export default {
             const [timerData] = await connect(checkTimer, [snsId, 0]);
             const nowTime = new Date().getTime()
 
-            console.log({ timerData, now: new Date() })
+            console.log({ timerData })
 
             if (timerData) {
                 const startTime = timerData.studyDate.getTime()
