@@ -9,7 +9,7 @@ const pool = mysql.createPool({
     database: config.mysql.database,
     waitForConnections: true,
     connectionLimit: 20,
-    timezone: "+09:00"
+    // timezone: "+00:00"
 });
 
 // select
