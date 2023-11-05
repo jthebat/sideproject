@@ -189,7 +189,6 @@ export default {
         try {
             const { snsId } = res.locals.user.info;
             let { startPoint } = req.body;
-            startPoint = new Date(startPoint);
 
             const endDate = new Date();
             const endDay = endDate.getDate();
