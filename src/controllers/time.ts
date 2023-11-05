@@ -14,8 +14,11 @@ interface access extends RowDataPacket {
 
 function getToday(date: Date) {
     var year = date.getFullYear();
-    var month = ("0" + (1 + date.getMonth())).slice(-2);
-    var day = ("0" + date.getDate()).slice(-2);
+    var month = date.getMonth() +1;
+    var day = date.getDate();
+
+    String(month).length ===1 ? `0${month}` : month;
+    String(day).length === 1 ? `0${day}` : day;
 
     return year + "-" + month + "-" + day;
 };
