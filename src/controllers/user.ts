@@ -319,29 +319,7 @@ const existCharacter = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-/*
-// 보유캐릭터 확인
-const existCharacter = async (req: Request, res: Response) => {
-    const { snsId } = res.locals.user.info;
 
-    const existCharacter = `SELECT type, characterImg FROM CHARACTERS as C JOIN CHARATERSINFO as CI ON C.charactersId = CI.id WHERE snsId=?`;
-
-    const conn = await pool.getConnection();
-
-    try {
-        const [rows]: [access[], FieldPacket[]] = await conn.query(existCharacter, [snsId]);
-
-        return res.status(200).send({
-            total: rows.length,
-            character: rows
-        });
-    } catch (err) {
-        res.send(err);
-    } finally {
-        conn.release();
-    }
-};
-*/
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;
