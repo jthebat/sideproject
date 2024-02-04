@@ -59,9 +59,9 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         try {
             const [existUser] = await db.connect((con: any) => con.query(existUserQuery, [info.snsId]))();
 
-            let screenMode = false
-            let statusCode = 201
-            let page = 'signin'
+            let screenMode = false;
+            let statusCode = 201;
+            let page = 'signin';
 
             // 신규가입시
             if (!existUser) {
@@ -74,16 +74,28 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 await db.connect((con: any) => con.query(updateQuery, [refreshToken, info.snsId]))();
                 await db.finalCommit();
 
-                screenMode = existUser.darkMode
-                statusCode = 200
-                page = 'timer'
+                screenMode = existUser.darkMode;
+                statusCode = 200;
+                page = 'timer';
             }
 
-            return res.status(statusCode)
-                .cookie('screenMode', screenMode)
-                .cookie('refreshToken', refreshToken)
-                .cookie('accessToken', accessToken)
-                .redirect(`http://localhost:3000/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            const domain = process.env.FOCUSMATE_DOMAIN;
+
+            console.log(domain)
+
+            if (process.env.PROCESS_MODE === "dev") {
+                return res.status(statusCode)
+                    .cookie('screenMode', screenMode)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`http://localhost:3000/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            } else {
+                return res.status(statusCode)
+                    .cookie('screenMode', screenMode)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`${domain}/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            }
         } catch (err) {
             db.release();
             next(err)
