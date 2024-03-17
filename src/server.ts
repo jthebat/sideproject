@@ -23,11 +23,11 @@ const corsOption = {
 /** Log the request */
 app.use((req, res, next) => {
     /** Log the req */
-    logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
+    // logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}]`);
 
     res.on('finish', () => {
         /** Log the res */
-        logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - STATUS: [${res.statusCode}] - IP: [${req.socket.remoteAddress}]`);
+        logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - STATUS: [${res.statusCode}]`);
     });
     next();
 });
