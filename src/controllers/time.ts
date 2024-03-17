@@ -405,6 +405,8 @@ export default {
             const { snsId } = res.locals.user.info;
             const { theDay } = req.query;
 
+            if (!theDay) return res.status(400).json({ message: "theDay가 존재하지 않습니다!" })
+
             // sql
             const conn = await pool.getConnection();
             const getData = `SELECT studyDate, studyTime, endTime FROM STUDYTIME WHERE snsId=? AND DATE(studyDate)=DATE(?)`;
