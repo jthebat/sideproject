@@ -124,25 +124,21 @@ const ADCheck = async (req: Request, res: Response, next: NextFunction) => {
 const userInfo = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = res.locals;
     const findNickname = `SELECT nickname, darkMode FROM USERS WHERE snsId=?`;
-    const conn = await pool.getConnection();
 
     try {
-        if (!user) {
-            return res.status(400).json({ result: false, message: '존재하지 않음' });
-        }
+        if (!user) return res.status(401).json({ result: false, message: '토큰 정보가 존자해지 않음' });
 
-        const [userinfo]: [access[], FieldPacket[]] = await conn.query(findNickname, [user.info.snsId]);
+        const [userinfo] = await db.connect((conn: any) => conn.query(findNickname, [user.info.snsId]))();
 
         return res.json({
             message: 'success',
             snsId: user.info.snsId,
-            nickname: userinfo[0].nickname,
-            screenMode: userinfo[0].darkMode
+            nickname: userinfo.nickname,
+            screenMode: userinfo.darkMode
         });
     } catch (err) {
+        await db.rollback();
         next(err);
-    } finally {
-        conn.release();
     }
 };
 
