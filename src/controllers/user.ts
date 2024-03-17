@@ -81,8 +81,6 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
 
             const domain = process.env.FOCUSMATE_DOMAIN;
 
-            console.log(domain)
-
             if (process.env.PROCESS_MODE === "dev") {
                 return res.status(statusCode)
                     .cookie('screenMode', screenMode)
@@ -104,7 +102,7 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
 };
 
 // 광고 수신 동의 확인
-const ADCheck = async (req: Request, res: Response) => {
+const ADCheck = async (req: Request, res: Response, next: NextFunction) => {
     const { adCheck } = req.body;
     const { snsId } = res.locals.user.info;
 
@@ -114,16 +112,16 @@ const ADCheck = async (req: Request, res: Response) => {
 
     try {
         await conn.query(insert_Ad, [adCheck, snsId]);
-        res.status(200).send({ message: 'success' });
+        return res.status(200).send({ message: 'success' });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
 };
 
 // 로그인한 유저에 대한 정보 가져오기
-const userInfo = async (req: Request, res: Response) => {
+const userInfo = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = res.locals;
     const findNickname = `SELECT nickname, darkMode FROM USERS WHERE snsId=?`;
     const conn = await pool.getConnection();
@@ -142,7 +140,7 @@ const userInfo = async (req: Request, res: Response) => {
             screenMode: userinfo[0].darkMode
         });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
@@ -184,7 +182,7 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // 스크린모드 변경
-const darkMode = async (req: Request, res: Response) => {
+const darkMode = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const { dark } = req.body;
 
@@ -195,16 +193,16 @@ const darkMode = async (req: Request, res: Response) => {
 
     try {
         await conn.query(query_2, [dark, snsId]);
-        res.status(200).send({ message: 'success' });
+        return res.status(201).send({ message: 'success' });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
 };
 
 // 캐릭터정보 저장
-const character = async (req: Request, res: Response) => {
+const character = async (req: Request, res: Response, next: NextFunction) => {
     const { type, charImg } = req.body;
     const query = `INSERT INTO CHARACTERSINFO (type, characterImg) VALUES (?,?)`;
 
@@ -212,9 +210,9 @@ const character = async (req: Request, res: Response) => {
 
     try {
         await conn.query(query, [type, charImg]);
-        res.status(200).send({ message: 'success' });
+        return res.status(200).send({ message: 'success' });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
@@ -222,22 +220,22 @@ const character = async (req: Request, res: Response) => {
 
 //* TODO: 백엔드에서 직접 업데이트를 해줘야 하는건가? 시간이 들어오면 유저의 전체 시간 체크해서 매치..? 고려해보기
 //* 획득한 캐릭터 저장 (미완)
-const userCharater = async (req: Request, res: Response) => {
+const userCharater = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const { } = req.body;
 
     const conn = await pool.getConnection();
-
     try {
-        res.status(200).send({ message: 'success' });
+
+        return res.status(200).send({ message: 'success' });
     } catch (err) {
-        res.send(err);
+        next(err)
     } finally {
         conn.release();
     }
 };
 //유저프로필캐릭터가져오기
-const userProfileCharacter = async (req: Request, res: Response) => {
+const userProfileCharacter = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = res.locals;
     const findCode = `SELECT characterCode FROM USERS WHERE snsId = ?`;
     const userCharater = `select characterImg, requirement, codeNum FROM CHARACTERSINFO where codeNum = ?`;
@@ -256,13 +254,13 @@ const userProfileCharacter = async (req: Request, res: Response) => {
             character
         });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
 };
 //대표 프로필 변경
-const chgMainCharacter = async (req: Request, res: Response) => {
+const chgMainCharacter = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const { codeNum } = req.body;
     //const findCode = `SELECT characterCode FROM USERS WHERE snsId = ?`;
@@ -273,17 +271,16 @@ const chgMainCharacter = async (req: Request, res: Response) => {
 
     try {
         await conn.query(query, [codeNum, snsId]);
-        res.status(201).json({ message: 'success' });
+        return res.status(201).json({ message: 'success' });
     } catch (err) {
-        // console.log(err);
-        res.send(err);
+        next(err)
     } finally {
         conn.release();
     }
 };
 
 // 보유캐릭터 확인
-const existCharacter = async (req: Request, res: Response) => {
+const existCharacter = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const totalcharacters = 11; //시스템의 총 캐릭터 수
     const existCharacter = `SELECT C.codeNum, C.characterImg, C.silhouette, C.missionType, C.requirement, C.progress , C.tip, W.snsId AS T FROM CHARACTERSINFO AS C LEFT JOIN (SELECT * FROM USERCHARACTERS WHERE snsId=?)AS W ON C.codeNum = W.codeNum`;
@@ -293,7 +290,7 @@ const existCharacter = async (req: Request, res: Response) => {
     try {
         const [rows]: [characteraccess[], FieldPacket[]] = await conn.query(existCharacter, [snsId]);
 
-        const data = rows.map((obj) => ({
+        const data = rows.map(obj => ({
             codeNum: obj.codeNum,
             imageURL: obj.T ? obj.characterImg : obj.silhouette,
             missionType: obj.missionType,
@@ -326,14 +323,14 @@ const existCharacter = async (req: Request, res: Response) => {
             collectedC: countC
         });
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
 };
 
 // 닉네임 중복체크
-const nicknameCheck = async (req: Request, res: Response) => {
+const nicknameCheck = async (req: Request, res: Response, next: NextFunction) => {
     const { nickname } = req.query;
     const query = `SELECT nickname FROM USERS WHERE nickname=?`;
 
@@ -342,16 +339,16 @@ const nicknameCheck = async (req: Request, res: Response) => {
     try {
         const [rows]: [access[], FieldPacket[]] = await conn.query(query, [nickname]);
         if (rows[0]) {
-            res.status(400).send({
+            return res.status(400).send({
                 message: '이미 있는 닉네임입니다.'
             });
         } else {
-            res.status(200).send({
+            return res.status(200).send({
                 message: '사용가능한 닉네임입니다.'
             });
         }
     } catch (err) {
-        res.send(err);
+        next(err);
     } finally {
         conn.release();
     }
@@ -365,7 +362,7 @@ const signOut = async (req: Request, res: Response) => {
     const signOut = `DELETE FROM USERS WHERE USERS.snsId=?`;
 
     conn.query(signOut, [snsId]);
-    res.status(200).send({
+    return res.status(200).send({
         message: 'success'
     });
 };
