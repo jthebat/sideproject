@@ -176,7 +176,7 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
 
         return res.status(201).send(data);
     } catch (err) {
-        await db.release();
+        await db.rollback();
         next(err);
     }
 };
@@ -187,19 +187,17 @@ const darkMode = async (req: Request, res: Response, next: NextFunction) => {
     const { dark } = req.body;
     console.log('[/api/user/onDark]의 body값은 \n', req.body);
 
-    const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
+    // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
     const query_2 = `UPDATE USERS SET darkMode=? WHERE snsId=?`;
 
     try {
         await db.transaction();
-        const update = await db.connect((con: any) => con.query(query_2, [dark, snsId]))();
+        await db.connect((con: any) => con.query(query_2, [dark, snsId]))();
         await db.finalCommit();
-
-        console.log(update);
 
         return res.status(201).send({ message: 'success' });
     } catch (err) {
-        await db.release();
+        await db.rollback();
         next(err);
     }
 };
