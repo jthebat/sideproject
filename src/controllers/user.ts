@@ -185,6 +185,7 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
 const darkMode = async (req: Request, res: Response, next: NextFunction) => {
     const { snsId } = res.locals.user.info;
     const { dark } = req.body;
+    console.log('[/api/user/onDark]의 body값은 \n', req.body)
 
     // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
     const query_2 = `UPDATE USERS SET darkMode=? WHERE snsId=?`;
