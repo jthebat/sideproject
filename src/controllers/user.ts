@@ -59,9 +59,9 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
         try {
             const [existUser] = await db.connect((con: any) => con.query(existUserQuery, [info.snsId]))();
 
-            let screenMode = false
-            let statusCode = 201
-            let page = 'signin'
+            let screenMode = false;
+            let statusCode = 201;
+            let page = 'signin';
 
             // 신규가입시
             if (!existUser) {
@@ -74,16 +74,28 @@ const kakaoCallback = async (req: Request, res: Response, next: NextFunction) =>
                 await db.connect((con: any) => con.query(updateQuery, [refreshToken, info.snsId]))();
                 await db.finalCommit();
 
-                screenMode = existUser.darkMode
-                statusCode = 200
-                page = 'timer'
+                screenMode = existUser.darkMode;
+                statusCode = 200;
+                page = 'timer';
             }
 
-            return res.status(statusCode)
-                .cookie('screenMode', screenMode)
-                .cookie('refreshToken', refreshToken)
-                .cookie('accessToken', accessToken)
-                .redirect(`http://localhost:3000/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            const domain = process.env.FOCUSMATE_DOMAIN;
+
+            console.log(domain)
+
+            if (process.env.PROCESS_MODE === "dev") {
+                return res.status(statusCode)
+                    .cookie('screenMode', screenMode)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`http://localhost:3000/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            } else {
+                return res.status(statusCode)
+                    .cookie('screenMode', screenMode)
+                    .cookie('refreshToken', refreshToken)
+                    .cookie('accessToken', accessToken)
+                    .redirect(`${domain}/${page}?accessToken=${accessToken}&refreshToken=${refreshToken}&screenMode=${screenMode}`);
+            }
         } catch (err) {
             db.release();
             next(err)
@@ -319,29 +331,7 @@ const existCharacter = async (req: Request, res: Response) => {
         conn.release();
     }
 };
-/*
-// 보유캐릭터 확인
-const existCharacter = async (req: Request, res: Response) => {
-    const { snsId } = res.locals.user.info;
 
-    const existCharacter = `SELECT type, characterImg FROM CHARACTERS as C JOIN CHARATERSINFO as CI ON C.charactersId = CI.id WHERE snsId=?`;
-
-    const conn = await pool.getConnection();
-
-    try {
-        const [rows]: [access[], FieldPacket[]] = await conn.query(existCharacter, [snsId]);
-
-        return res.status(200).send({
-            total: rows.length,
-            character: rows
-        });
-    } catch (err) {
-        res.send(err);
-    } finally {
-        conn.release();
-    }
-};
-*/
 // 닉네임 중복체크
 const nicknameCheck = async (req: Request, res: Response) => {
     const { nickname } = req.query;

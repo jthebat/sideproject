@@ -16,14 +16,14 @@ const MYSQL = {
 
 const SOCIAL = {
     kakao_id: process.env.KAKAO_ID,
-    kakao_url: process.env.KAKAO_URL
+    kakao_url: process.env.PROCESS_MODE !== 'dev' ? process.env.MAIN_KAKAO_URL : process.env.KAKAO_URL
 };
 
 const JWT = {
     secretKey: process.env.JWT_SECRET
 };
 
-const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || 'localhost';
+let SERVER_HOSTNAME = process.env.PROCESS_MODE !== 'dev' ? process.env.SERVER_HOSTNAME : 'localhost';
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 
 const SERVER = {

@@ -16,18 +16,18 @@ const app = express();
 const SERVER = http.createServer(app);
 
 const corsOption = {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://focusmate.co.kr'],
     credentials: true,
 };
 
 /** Log the request */
 app.use((req, res, next) => {
     /** Log the req */
-    logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
+    // logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}]`);
 
     res.on('finish', () => {
         /** Log the res */
-        logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - STATUS: [${res.statusCode}] - IP: [${req.socket.remoteAddress}]`);
+        logging.info(NAMESPACE, `METHOD: [${req.method}] - URL: [${req.url}] - STATUS: [${res.statusCode}]`);
     });
     next();
 });
