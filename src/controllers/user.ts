@@ -190,15 +190,15 @@ const darkMode = async (req: Request, res: Response, next: NextFunction) => {
     // const query_1 = `SELECT snsId FROM USERS WHERE snsId=?`;
     const query_2 = `UPDATE USERS SET darkMode=? WHERE snsId=?`;
 
-    const conn = await pool.getConnection();
-
     try {
-        await conn.query(query_2, [dark, snsId]);
+        await db.transaction();
+        await db.connect((con: any) => con.query(query_2, [dark, snsId]))();
+        await db.commit();
+        
         return res.status(201).send({ message: 'success' });
     } catch (err) {
+        await db.release();
         next(err);
-    } finally {
-        conn.release();
     }
 };
 
