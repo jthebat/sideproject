@@ -3,9 +3,11 @@ import jwt from 'jsonwebtoken';
 import config from '../config/config';
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    const authorization = req.headers.authorization as string;
-
     try {
+        const authorization = req.headers.authorization as string;
+
+        if (!authorization) return res.status(401).json({ message: "토큰이 존재하지 않습니다!" })
+
         const [tokentype, tokenvalue] = authorization.split(' ');
         if (tokenvalue == 'null') {
             res.locals.users = null;
