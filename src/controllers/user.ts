@@ -191,13 +191,11 @@ const darkMode = async (req: Request, res: Response, next: NextFunction) => {
     const query_2 = `UPDATE USERS SET darkMode=? WHERE snsId=?`;
 
     try {
-        const [findUser] = await db.connect((con: any) => con.query(query_1, [snsId]))();
-
-        console.log(1111, findUser)
-
         await db.transaction();
-        await db.connect((con: any) => con.query(query_2, [dark, snsId]))();
-        await db.commit();
+        const update = await db.connect((con: any) => con.query(query_2, [dark, snsId]))();
+        await db.finalCommit();
+
+        console.log(update);
 
         return res.status(201).send({ message: 'success' });
     } catch (err) {
